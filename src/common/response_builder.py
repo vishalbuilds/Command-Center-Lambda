@@ -1,47 +1,57 @@
 import json
-from datetime import datetime
-from typing import Optional, Dict, Any
+from datetime import datetime, timezone
+from typing import Optional, Dict, Any, Literal
 
 
-class ResponseBuilder(dict):
-    SUCCESS_RESULT = "success"
-    ERROR_RESULT = "error"
-
-    def __init__(
+class ResponseBuilder:
+    def _build_response(
         self,
-        result: str,
+        status_code: int,
+        result: Literal['success', 'error'],
+        message: Optional[str],
+        data: Optional[Dict[str, Any]],
+        ts: Optional[datetime]
+    ) -> Dict[str, Any]:
+        if ts is None:
+            ts = datetime.now(timezone.utc)
+
+        return {
+            "statusCode": status_code,
+            "result": result,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({
+                "message": message,
+                "data": data,
+                "timestamp": ts.isoformat(),
+            }),
+        }
+
+    def success(
+        self,
+        status_code: int = 200,
         message: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None,
-        status_code: Optional[int] = None,
-        meta: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
-        include_timestamp: bool = True
-    ):
-        if result not in [self.SUCCESS_RESULT, self.ERROR_RESULT]:
-            raise ValueError(f"Invalid result: {result}")
+        ts: Optional[datetime] = None
+    ) -> Dict[str, Any]:
+        return self._build_response(
+            status_code=status_code,
+            result='success',
+            message=message,
+            data=data,
+            ts=ts
+        )
 
-        body = {
-            "status": result
-        }
-
-        if message:
-            body["message"] = message
-
-        if data:
-            body["data"] = data
-
-        if meta is None:
-            meta = {}
-
-        if include_timestamp:
-            meta["timestamp"] = datetime.utcnow().isoformat() + "Z"
-
-        if meta:
-            body["meta"] = meta
-
-        response = {
-            "statusCode": status_code or (200 if result == self.SUCCESS_RESULT else 500),
-            "headers": headers or {"Content-Type": "application/json"},
-            "body": json.dumps(body)
-        }
-        super().__init__(response)
+    def error(
+        self,
+        status_code: int = 400,
+        message: Optional[str] = None,
+        data: Optional[Dict[str, Any]] = None,
+        ts: Optional[datetime] = None
+    ) -> Dict[str, Any]:
+        return self._build_response(
+            status_code=status_code,
+            result='error',
+            message=message,
+            data=data,
+            ts=ts
+        )

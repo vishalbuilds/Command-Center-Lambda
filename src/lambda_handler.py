@@ -5,7 +5,7 @@ from common.logger import Logger
 
 LOGGER = Logger(__name__)
 
-def lambda_handler(event, context):
+def lambda_handler(event, context) ->ResponseBuilder:
 
     LOGGER.info(f"Lambda handler started with {event}.")
 
@@ -17,11 +17,12 @@ def lambda_handler(event, context):
     
     # Use StrategyFactory to choose and run strategy
     strategy = StrategyFactory(clean_event)
+    #
     response = strategy.execute()
     LOGGER.info(f"Strategy response: {response}")
     
     # Build final Lambda response
-    final_response = ResponseBuilder(result="success", data=response)
+    final_response = ResponseBuilder.success(result="success", data=response)
     LOGGER.info(f"Final response: {final_response}")
     
     return final_response
