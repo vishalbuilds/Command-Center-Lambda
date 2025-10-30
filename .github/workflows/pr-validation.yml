@@ -1,0 +1,68 @@
+name: PR validation
+
+permissions:
+  contents: read
+  pull-requests: read
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  pr-title-check:
+    name: Check PR Title
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
+    steps:
+      - name: Validate PR Title Format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title || "";
+            if (!/^(feature|fix|chore|docs):/i.test(title)) {
+              core.setFailed("❌ PR title must start with 'feature:', 'fix:', 'chore:', or 'docs:'.");
+            } else {
+              console.log("✅ PR title format is valid.");
+            }
+
+  pr-description-check:
+    name: Check PR Description
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: pr-title-check
+    continue-on-error: true
+    steps:
+      - name: Validate PR Description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || "";
+            if (body.trim().length < 10) {
+              core.setFailed("❌ PR description must be at least 10 characters long.");
+            } else {
+              console.log("✅ PR description length is valid.");
+            }
+
+  pr-labels-check:
+    name: Check PR Labels
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: pr-description-check
+    continue-on-error: true
+    steps:
+      - name: Validate PR Labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = pr.labels.map(l => l.name);
+            if (labels.length === 0) {
+              core.setFailed("❌ PR must have at least one label.");
+            } else {
+              console.log("✅ PR has labels:", labels.join(", "));
+            }

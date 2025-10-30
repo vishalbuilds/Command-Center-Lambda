@@ -1,7 +1,4 @@
-from strategies.utils.s3_utils import S3Utils
-from strategies.utils.dynamodb_utils import DynamoDBUtils
 from strategies.workflow.s3_remove_pii import S3RemovePii
-from strategies.utils.transcribe_utils import TranscribeUtils
 from strategies.workflow.s3_get_file import S3GetFile
 from strategies.workflow.status_checker import StatusChecker 
 from common.logger import Logger
@@ -10,9 +7,6 @@ LOGGER = Logger(__name__)
 
 VALID_FACTORY_STRATEGIES = [
     's3_remove_pii',
-    's3_utils',
-    'dynamodb_utils',
-    'transcribe_utils',
     'S3GetFile',
     'StatusChecker'
 ]

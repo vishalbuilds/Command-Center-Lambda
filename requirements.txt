@@ -8,13 +8,3 @@ PyYAML==6.0.1
 # === Testing & Coverage ===
 pytest==8.2.0
 coverage==7.5.1
-
-# === Linting & Quality ===
-flake8==7.0.0
-
-# === Optional (recommended for better CI checks) ===
-bandit==1.7.7        # Python security analyzer
-radon==6.0.1         # Cyclomatic complexity checker
-
-
-
