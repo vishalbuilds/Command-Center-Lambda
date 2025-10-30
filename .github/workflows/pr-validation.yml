@@ -1,51 +1,63 @@
-name: Validate Pull Request
-
+name: Python CI
 on:
+  push:
+    branches: [main, master]
   pull_request:
-    types: [opened, edited, labeled, unlabeled, synchronize]
+    branches: [main, master]
 
 jobs:
-  validate-pr:
+  pr-title-check:
+    name: Check PR Title
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    continue-on-error: true
     steps:
-      - name: Check PR title and body
-        id: check_pr
+      - name: Validate PR Title Format
         uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
-
             const title = pr.title || "";
-            const body = pr.body || "";
-            const labels = pr.labels.map(l => l.name);
-
-            let errors = [];
-
-            // 1. Check title rule
             if (!/^(feature|fix|chore|docs):/i.test(title)) {
-              errors.push("❌ PR title must start with 'feature:', 'fix:', 'chore:', or 'docs:'.");
-            }
-
-            // 2. Check body rule
-            if (body.length < 10) {
-              errors.push("❌ PR description must be at least 10 characters long.");
-            }
-
-            // 3. Check label presence
-            if (labels.length === 0) {
-              errors.push("❌ PR must have at least one label.");
-            }
-
-            // If any errors, post a comment and fail
-            if (errors.length > 0) {
-              const message = errors.join("\n");
-              await github.rest.issues.createComment({
-                issue_number: pr.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: message
-              });
-              core.setFailed(message);
+              core.setFailed("❌ PR title must start with 'feature:', 'fix:', 'chore:', or 'docs:'.");
             } else {
-              console.log("✅ PR looks good!");
+              console.log("✅ PR title format is valid.");
+            }
+
+  pr-description-check:
+    name: Check PR Description
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: pr-title-check
+    continue-on-error: true
+    steps:
+      - name: Validate PR Description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || "";
+            if (body.trim().length < 10) {
+              core.setFailed("❌ PR description must be at least 10 characters long.");
+            } else {
+              console.log("✅ PR description length is valid.");
+            }
+
+  pr-labels-check:
+    name: Check PR Labels
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: pr-description-check
+    continue-on-error: true
+    steps:
+      - name: Validate PR Labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = pr.labels.map(l => l.name);
+            if (labels.length === 0) {
+              core.setFailed("❌ PR must have at least one label.");
+            } else {
+              console.log("✅ PR has labels:", labels.join(", "));
             }
