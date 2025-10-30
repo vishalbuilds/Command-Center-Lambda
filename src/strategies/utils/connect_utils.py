@@ -10,6 +10,7 @@ All methods include logging and error handling for robust production use.
 
 from common.client_record import connect_client
 from common.logger import Logger
+logger = Logger(__name__)
 
 
 def _get_paginator(service: str, region_name: str):
@@ -32,9 +33,6 @@ def _get_paginator(service: str, region_name: str):
     except Exception as e:
         logger.error(f"Error in getting paginator: {e}")
         raise
-
-
-logger = Logger(__name__)
 
 
 def list_contact_flow(region_name, instanceId: str):
