@@ -1,4 +1,9 @@
-name: Python CI
+name: PR validation
+
+permissions:
+  contents: read
+  pull-requests: read
+
 on:
   push:
     branches: [main, master]
