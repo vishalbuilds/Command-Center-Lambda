@@ -1,6 +1,6 @@
-from strategies.workflow.s3_remove_pii import S3RemovePii
-from strategies.workflow.s3_get_file import S3GetFile
-from strategies.workflow.status_checker import StatusChecker 
+from workflow.s3_remove_pii import S3RemovePii
+from workflow.s3_get_file import S3GetFile
+from workflow.status_checker import StatusChecker 
 from common.logger import Logger
 
 LOGGER = Logger(__name__)

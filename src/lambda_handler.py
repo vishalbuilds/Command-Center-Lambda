@@ -1,4 +1,4 @@
-from strategies.strategy_factory import StrategyFactory
+from common.strategy_factory import StrategyFactory
 from common.response_builder import ResponseBuilder
 from common.event_sanitizer import EventSanitizer
 from common.logger import Logger
