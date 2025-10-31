@@ -97,6 +97,8 @@ jobs:
   radon:
     name: Radon Complexity Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
