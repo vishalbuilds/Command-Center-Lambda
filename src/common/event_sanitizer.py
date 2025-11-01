@@ -10,14 +10,12 @@ class EventSanitizer:
     SENSITIVE_KEYS = {
         "password", "passwd", "secret", "api_key", "apikey", "access_token",
         "auth_token", "token", "card_number", "credit_card", "ssn", "aadhar",
-        "dob", "email", "phone", "mobile", "address",
+        "dob", "address",
         "awsaccesskeyid", "aws_secret_access_key", "secretaccesskey", "sessiontoken",
         "authorization", "auth", "x-amz-security-token"
     }
 
     SENSITIVE_PATTERNS = {
-        "email": r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+",
-        "phone": r"\b\d{10}\b",
         "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
         "credit_card": r"\b(?:\d[ -]*?){13,16}\b",
         "aws_key": r"AKIA[0-9A-Z]{16}",

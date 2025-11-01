@@ -7,18 +7,17 @@ It demonstrates OOP, logging, and robust error handling.
 import uuid
 import time
 import os
-from strategies.utils.s3_utils import S3Utils
-from strategies.utils.transcribe_utils import TranscribeUtils
+from utils.s3_utils import get_object, put_object, delete_object, list_objects, create_presigned_url
+from utils.transcribe_utils import check_transcription_status
 from common.logger import Logger
 
-class S3RemovePii(S3Utils, TranscribeUtils):
+
+class S3RemovePii:
     """
     Handler for removing PII from S3 audio files using AWS Transcribe.
-    Inherits S3Utils and TranscribeUtils for AWS operations.
+    Uses utility functions directly.
     """
     def __init__(self):
-        S3Utils.__init__(self, region_name=os.environ.get('AWS_REGION', 'us-east-1'))
-        TranscribeUtils.__init__(self, region_name=os.environ.get('AWS_REGION', 'us-east-1'))
         self.logger = Logger(__name__)
         self.target_output_bucket = os.environ.get('TARGET_OUTPUT_BUCKET', 'new-recording-with-pii')
 
@@ -31,6 +30,11 @@ class S3RemovePii(S3Utils, TranscribeUtils):
             self.logger.error(f"Error generating random ID: {e}")
             raise e
 
+    def start_transcription_job(self, transcription_job_name, media_file_uri, target_output_bucket):
+        # Placeholder for actual implementation
+        # You should implement this function or import it from the correct utils module
+        raise NotImplementedError("start_transcription_job must be implemented or imported.")
+
     def handle(self, event, context):
         """
         Lambda entry point for removing PII from S3 audio files.
@@ -41,20 +45,19 @@ class S3RemovePii(S3Utils, TranscribeUtils):
             dict: Lambda response with status and message.
         """
         self.logger.info('Lambda handler function')
-        self.logger.info(f" Starting LambdaFunctionName:redact-pii, Region: {self.s3.meta.region_name}")
         source_bucket = event['Records'][0]['s3']['bucket']['name']
         source_key = event['Records'][0]['s3']['object']['key']
         media_file_uri = f"s3://{source_bucket}/{source_key}"
         transcription_job_name = f"Transcription_Job_Name-{self.generate_random_id()}"
         try:
-            # Example usage of inherited S3Utils method (get_object):
-            # obj = self.get_object(source_bucket, source_key)
+            # Example usage of utility function:
+            # obj = get_object(source_bucket, source_key, os.environ.get('AWS_REGION', 'us-east-1'))
             transcription_start = self.start_transcription_job(
                 transcription_job_name, media_file_uri, self.target_output_bucket)
             transcription_start_status = transcription_start['TranscriptionJob']['TranscriptionJobStatus']
             if transcription_start_status in ['IN_PROGRESS', 'QUEUED']:
                 time.sleep(5)
-                check_status = self.check_transcription_status(transcription_job_name)
+                check_status = check_transcription_status(transcription_job_name, os.environ.get('AWS_REGION', 'us-east-1'))
                 self.logger.info(f"Transcription job processing completed with status: {check_status}")
                 return {
                     'statusCode': 200,

@@ -22,7 +22,8 @@ def _dynamoDB_condition_Expression_key(key_name:str,key_value:str):
     """
     Initated to get eq condition
     """
-    return dynamodb_resource.dynamoDB_key_condition().Key(key_name).eq(key_value)
+    # Use dynamoDB_condition_Expression to access boto3.dynamodb.conditions
+    return dynamodb_resource.dynamoDB_condition_Expression().Key(key_name).eq(key_value)
 
 def _buid_dynamoDB_update_expression(update_data:dict)->tuple[str,dict,dict]:
     """
