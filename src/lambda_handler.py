@@ -38,7 +38,7 @@ def lambda_handler(event, context) ->LambdaResponse:
     #init Event Sanitizer to remove PII information
     try:
         LOGGER.info("Processing event sanitizer to remove sensitive data")
-        event = EventSanitizer(event).data
+        event = EventSanitizer(event).data()
     except Exception as e:
         LOGGER.add_tempdata("error",str(e))
         LOGGER.error(f"Error in processing Event Sanitizer: {e}")
