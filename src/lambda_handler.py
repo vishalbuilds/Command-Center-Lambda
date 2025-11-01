@@ -1,4 +1,4 @@
-from strategies.strategy_factory import StrategyFactory
+from common.strategy_factory import StrategyFactory
 from common.response_builder import ResponseBuilder
 from common.event_sanitizer import EventSanitizer
 from common.logger import Logger
@@ -17,12 +17,14 @@ def lambda_handler(event, context) ->ResponseBuilder:
     
     # Use StrategyFactory to choose and run strategy
     strategy = StrategyFactory(clean_event)
-    #
-    response = strategy.execute()
-    LOGGER.info(f"Strategy response: {response}")
-    
-    # Build final Lambda response
-    final_response = ResponseBuilder.success(result="success", data=response)
+    try:
+        response = strategy.execute()
+        LOGGER.info(f"Strategy response: {response}")
+        # Build final Lambda response
+        final_response = ResponseBuilder().success(data=response)
+    except Exception as e:
+        LOGGER.error(f"Error executing strategy: {e}")
+        final_response = ResponseBuilder().error(message=str(e))
     LOGGER.info(f"Final response: {final_response}")
     
     return final_response
