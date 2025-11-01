@@ -8,7 +8,7 @@ def test_sanitize_sensitive_keys():
     event = {
         "password": "secret123",
         "api_key": "abc123",
-        "email": "test@example.com",
+        "token": "xyz789",
         "name": "John Doe"
     }
     
@@ -17,7 +17,7 @@ def test_sanitize_sensitive_keys():
     
     assert result["password"] == "***MASKED***"
     assert result["api_key"] == "***MASKED***"
-    assert result["email"] == "***MASKED***"
+    assert result["token"] == "***MASKED***"
     assert result["name"] == "John Doe"
 
 def test_sanitize_nested_dict():
@@ -41,44 +41,68 @@ def test_sanitize_nested_dict():
 def test_sanitize_list():
     event = {
         "users": [
-            {"email": "user1@example.com", "name": "User 1"},
-            {"email": "user2@example.com", "name": "User 2"}
+            {"token": "token123", "name": "User 1"},
+            {"token": "token456", "name": "User 2"}
         ]
     }
     
     sanitizer = EventSanitizer(event)
     result = sanitizer.data
     
-    assert result["users"][0]["email"] == "***MASKED***"
+    assert result["users"][0]["token"] == "***MASKED***"
     assert result["users"][0]["name"] == "User 1"
-    assert result["users"][1]["email"] == "***MASKED***"
+    assert result["users"][1]["token"] == "***MASKED***"
     assert result["users"][1]["name"] == "User 2"
 
 def test_sanitize_patterns():
     event = {
         "data": {
-            "text": "My email is user@example.com and my phone is 1234567890",
             "description": "SSN: 123-45-6789",
-            "card": "4111-1111-1111-1111"
+            "card": "4111-1111-1111-1111",
+            "notes": "AWS Key: AKIAIOSFODNN7EXAMPLE"
         }
     }
     
     sanitizer = EventSanitizer(event)
     result = sanitizer.data
     
-    assert "user@example.com" not in result["data"]["text"]
-    assert "***MASKED***" in result["data"]["text"]
+    # SSN should be masked
     assert "123-45-6789" not in result["data"]["description"]
+    assert "***MASKED***" in result["data"]["description"]
+    
+    # Credit card should be masked
     assert "4111-1111-1111-1111" not in result["data"]["card"]
+    assert "***MASKED***" in result["data"]["card"]
+    
+    # AWS key should be masked
+    assert "AKIAIOSFODNN7EXAMPLE" not in result["data"]["notes"]
+    assert "***MASKED***" in result["data"]["notes"]
 
 def test_custom_mask_text():
     event = {
         "password": "secret123",
-        "email": "test@example.com"
+        "api_key": "test_key_123"
     }
     
     sanitizer = EventSanitizer(event, mask_text="[REDACTED]")
     result = sanitizer.data
     
     assert result["password"] == "[REDACTED]"
-    assert result["email"] == "[REDACTED]"
+    assert result["api_key"] == "[REDACTED]"
+
+def test_non_sensitive_data_preserved():
+    """Test that non-sensitive data is not modified"""
+    event = {
+        "username": "john_doe",
+        "description": "This is a normal description",
+        "count": 42,
+        "active": True
+    }
+    
+    sanitizer = EventSanitizer(event)
+    result = sanitizer.data
+    
+    assert result["username"] == "john_doe"
+    assert result["description"] == "This is a normal description"
+    assert result["count"] == 42
+    assert result["active"] == True
