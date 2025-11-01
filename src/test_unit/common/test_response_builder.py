@@ -3,7 +3,7 @@ Unit tests for response_builder module.
 """
 import pytest
 from datetime import datetime, timezone
-from common.response_builder import ResponseBuilder
+from common.lambda_response import ResponseBuilder
 
 @pytest.fixture
 def response_builder():

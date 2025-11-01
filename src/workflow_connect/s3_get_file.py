@@ -1,5 +1,5 @@
 from utils import s3_utils
-from common.logger import Logger
+from common.models.logger import Logger
 import os
 LOGGER = Logger(__name__)
 

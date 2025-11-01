@@ -10,7 +10,7 @@ All methods include logging and error handling for robust production use.
 
 from typing import List, Optional, Dict, Any
 from common.client_record import ses_client
-from common.logger import Logger
+from common.models.logger import Logger
 import re
 
 logger = Logger(__name__)

@@ -7,7 +7,7 @@ All methods include logging and error handling for robust production use.
 """
 
 from common.client_record import dynamodb_resource
-from common.logger import Logger
+from common.models.logger import Logger
 
 
 logger = Logger(__name__)

@@ -15,9 +15,9 @@ def test_sanitize_sensitive_keys():
     sanitizer = EventSanitizer(event)
     result = sanitizer.data
     
-    assert result["password"] == "***MASKED***"
-    assert result["api_key"] == "***MASKED***"
-    assert result["token"] == "***MASKED***"
+    assert result["password"] == "***password***"
+    assert result["api_key"] == "***api_key***"
+    assert result["token"] == "***token***"
     assert result["name"] == "John Doe"
 
 def test_sanitize_nested_dict():
@@ -34,9 +34,9 @@ def test_sanitize_nested_dict():
     sanitizer = EventSanitizer(event)
     result = sanitizer.data
     
-    assert result["user"]["password"] == "***MASKED***"
+    assert result["user"]["password"] == "***password***"
     assert result["user"]["name"] == "John Doe"
-    assert result["user"]["credentials"]["api_key"] == "***MASKED***"
+    assert result["user"]["credentials"]["api_key"] == "***api_key***"
 
 def test_sanitize_list():
     event = {
@@ -49,9 +49,9 @@ def test_sanitize_list():
     sanitizer = EventSanitizer(event)
     result = sanitizer.data
     
-    assert result["users"][0]["token"] == "***MASKED***"
+    assert result["users"][0]["token"] == "***token***"
     assert result["users"][0]["name"] == "User 1"
-    assert result["users"][1]["token"] == "***MASKED***"
+    assert result["users"][1]["token"] == "***token***"
     assert result["users"][1]["name"] == "User 2"
 
 def test_sanitize_patterns():
@@ -68,15 +68,15 @@ def test_sanitize_patterns():
     
     # SSN should be masked
     assert "123-45-6789" not in result["data"]["description"]
-    assert "***MASKED***" in result["data"]["description"]
+    assert "***ssn***" in result["data"]["description"]
     
     # Credit card should be masked
     assert "4111-1111-1111-1111" not in result["data"]["card"]
-    assert "***MASKED***" in result["data"]["card"]
+    assert "***credit_card***" in result["data"]["card"]
     
     # AWS key should be masked
     assert "AKIAIOSFODNN7EXAMPLE" not in result["data"]["notes"]
-    assert "***MASKED***" in result["data"]["notes"]
+    assert "***aws_key***" in result["data"]["notes"]
 
 def test_custom_mask_text():
     event = {

@@ -4,7 +4,7 @@ S3Utils: A comprehensive utility class for AWS S3 operations.
 This class provides high-level, descriptive methods for common S3 operations such as get, put, delete, and list objects.
 All methods include logging and error handling for robust production use.
 """
-from common.logger import Logger
+from common.models.logger import Logger
 from common.client_record import s3_client
 from typing import Literal
 

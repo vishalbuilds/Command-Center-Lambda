@@ -4,7 +4,7 @@ Unit tests for logger module.
 import pytest
 import json
 import logging
-from common.logger import Logger
+from common.models.logger import Logger
 
 @pytest.fixture
 def logger():

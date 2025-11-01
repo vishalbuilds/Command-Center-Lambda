@@ -78,6 +78,34 @@ class Logger:
         """Sets metadata for logging."""
         self._metadata = key_values if key_values else {}
 
+    def init_context(self, context: Optional[Any] = None) -> None:
+        """
+        Initializes logging context with information from the AWS Lambda environment.
+
+        This method should be called at the beginning of your Lambda handler.
+        It extracts the AWS Request ID from the Lambda context object and other
+        details (like function name, version, and region) from environment variables.
+
+        Args:
+            context: The context object provided to the Lambda handler.
+        """
+        context_data = {}
+
+        # Extract info from the Lambda context object, if provided
+        if context and hasattr(context, "aws_request_id"):
+            context_data["aws_request_id"] = context.aws_request_id
+
+        # Extract info from Lambda environment variables
+        for key, env_var in [("function_name", "aws_lambda_function_name"),
+                             ("region", "aws_region"),
+                             ("version", "aws_lambda_function_version"),
+                             ]:
+            value = os.environ.get(env_var)
+            if value:
+                context_data[key] = value
+
+        self.set_metadata(context_data)
+
     def get_metadata(self) -> Dict[str, Any]:
         """Retrieves metadata."""
         return self._metadata

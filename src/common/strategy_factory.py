@@ -1,34 +1,38 @@
-from common.logger import Logger
+from common.models.logger import Logger
 import re
 import importlib
 
 LOGGER = Logger(__name__)
 
-VALID_FACTORY_STRATEGIES = [
+VALID_CONNECT_STRATEGIES = [
     's3_remove_pii',
     'S3GetFile',
     'StatusChecker'
 ]
 
+VALID_AG_STRATEGIES = []
+VALID_EB_CW_STRATEGIES = []
+VALID_URL_STRATEGIES = []
+VALID_OTHER_STRATEGIES = []
+VALID_DIRECT_INVOKE_STRATEGIES = []
+
+
+
 class StrategyFactory:
-    def __init__(self, event):
+    def __init__(self, event, invoke_type: str):
         self.event = event
+        self.invoke_type=invoke_type
         if "request_type" not in self.event:
+            LOGGER.error("Event must contain 'request_type'")
             raise Exception("Event must contain 'request_type'")
+            
+        
         if not self._validate_strategy():
             raise Exception(f"Invalid strategy: {self.event.get('request_type')}")
         self._initiate_strategy(self.event.get("request_type"))
 
     def _validate_strategy(self):
-        strategy_name = self.event.get("request_type")
-        def _normalize(s: str) -> str:
-            return re.sub(r'[^a-z0-9]', '', str(s).lower())
-
-        norm = _normalize(strategy_name)
-        for v in VALID_FACTORY_STRATEGIES:
-            if _normalize(v) == norm:
-                LOGGER.info(f'Valid strategy {strategy_name} found')
-                return True
+        if self.event.get("request_type","")
         LOGGER.warning(f'Invalid strategy {strategy_name}')
         return False
 

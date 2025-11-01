@@ -1,8 +1,6 @@
 import re
 from typing import Any, Dict
-from common.logger import Logger
 
-LOGGER = Logger(__name__)
 
 
 class EventSanitizer:
@@ -25,39 +23,38 @@ class EventSanitizer:
     MASK_TEXT = "***MASKED***"
 
     def __init__(self, event: Dict = None, mask_text: str = None):
-        if mask_text:
-            self.MASK_TEXT = mask_text
+        self.custom_mask_text = mask_text
         if event is not None:
             self.data = self._sanitize_dict(event)
         else:
             self.data = None
 
-    def _mask_value(self, value: Any) -> Any:
+    def _mask_value(self, value: Any, key_name: str) -> Any:
         if not isinstance(value, str):
             return value
-        return self.MASK_TEXT
+        if self.custom_mask_text:
+            return self.custom_mask_text
+        return f"***{key_name}***"
 
-    def _sanitize_value(self, value: Any) -> Any:
+    def _sanitize_value(self, value: Any, key_name: str = None) -> Any:
         if isinstance(value, str):
             sanitized_value = value
-            for _, pattern in self.SENSITIVE_PATTERNS.items():
-                sanitized_value = re.sub(pattern, self.MASK_TEXT, sanitized_value)
+            for name, pattern in self.SENSITIVE_PATTERNS.items():
+                mask = self.custom_mask_text if self.custom_mask_text else f"***{name}***"
+                sanitized_value = re.sub(pattern, mask, sanitized_value)
             return sanitized_value
         return value
 
     def _sanitize_dict(self, data: Dict) -> Dict:
         sanitized = {}
         for key, value in data.items():
-            if key.lower() in self.SENSITIVE_KEYS:
-                sanitized[key] = self._mask_value(value)
+            lower_key = key.lower()
+            if lower_key in self.SENSITIVE_KEYS:
+                sanitized[key] = self._mask_value(value, lower_key)
             elif isinstance(value, dict):
                 sanitized[key] = self._sanitize_dict(value)
             elif isinstance(value, list):
-                sanitized[key] = [
-                    self._sanitize_dict(v) if isinstance(v, dict) else self._sanitize_value(v)
-                    for v in value
-                ]
+                sanitized[key] = [self._sanitize_dict(v) if isinstance(v, dict) else self._sanitize_value(v) for v in value]
             else:
                 sanitized[key] = self._sanitize_value(value)
-        LOGGER.debug(f"Sanitized event: {sanitized}")
         return sanitized

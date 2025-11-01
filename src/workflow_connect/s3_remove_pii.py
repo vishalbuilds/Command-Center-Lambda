@@ -9,7 +9,7 @@ import time
 import os
 from utils.s3_utils import get_object, put_object, delete_object, list_objects, create_presigned_url
 from utils.transcribe_utils import check_transcription_status
-from common.logger import Logger
+from common.models.logger import Logger
 
 
 class S3RemovePii:
@@ -21,7 +21,7 @@ class S3RemovePii:
         self.logger = Logger(__name__)
         self.target_output_bucket = os.environ.get('TARGET_OUTPUT_BUCKET', 'new-recording-with-pii')
 
-    def generate_random_id(self):
+    def _generate_random_id(self):
         """Generate a random UUID string."""
         self.logger.info('Generating random ID')
         try:
@@ -30,12 +30,12 @@ class S3RemovePii:
             self.logger.error(f"Error generating random ID: {e}")
             raise e
 
-    def start_transcription_job(self, transcription_job_name, media_file_uri, target_output_bucket):
+    def _start_transcription_job(self, transcription_job_name, media_file_uri, target_output_bucket):
         # Placeholder for actual implementation
         # You should implement this function or import it from the correct utils module
         raise NotImplementedError("start_transcription_job must be implemented or imported.")
 
-    def handle(self, event, context):
+    def do_operation(self, event, context):
         """
         Lambda entry point for removing PII from S3 audio files.
         Args:

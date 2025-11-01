@@ -3,14 +3,14 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Literal
 
 
-class ResponseBuilder:
+class LambdaResponse:
+
     def _build_response(
-        self,
-        status_code: int,
         result: Literal['success', 'error'],
         message: Optional[str],
+        status_code: int,
         data: Optional[Dict[str, Any]],
-        ts: Optional[datetime]
+        ts: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         if ts is None:
             ts = datetime.now(timezone.utc)
@@ -25,13 +25,14 @@ class ResponseBuilder:
                 "timestamp": ts.isoformat(),
             }),
         }
-
+    
     def success(
         self,
-        status_code: int = 200,
         message: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None,
-        ts: Optional[datetime] = None
+        ts: Optional[datetime] = None,     
+        status_code: int = 200,
+        
     ) -> Dict[str, Any]:
         return self._build_response(
             status_code=status_code,
@@ -43,10 +44,10 @@ class ResponseBuilder:
 
     def error(
         self,
-        status_code: int = 400,
         message: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None,
-        ts: Optional[datetime] = None
+        ts: Optional[datetime] = None,
+        status_code: int = 400,
     ) -> Dict[str, Any]:
         return self._build_response(
             status_code=status_code,

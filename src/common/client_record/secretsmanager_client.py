@@ -1,5 +1,5 @@
 import boto3
-from common.logger import Logger
+from common.models.logger import Logger
 logger = Logger(__name__)
 
 def secretsmanager_client(region_name:str="us-east-1"):

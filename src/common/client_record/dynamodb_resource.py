@@ -1,6 +1,6 @@
 import boto3
 import boto3.dynamodb.conditions as dynamodb_conditions
-from common.logger import Logger
+from common.models.logger import Logger
 logger = Logger(__name__)
 
 def dynamoDB_resource(region_name:str="us-east-1"):
