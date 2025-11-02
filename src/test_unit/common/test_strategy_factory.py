@@ -3,7 +3,7 @@ Unit tests for strategy_factory module.
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from common.strategy_factory import StrategyFactory
+from common.models.strategy_factory import StrategyFactory
 
 def test_strategy_factory_missing_request_type():
     with pytest.raises(Exception, match="Event must contain 'request_type'"):

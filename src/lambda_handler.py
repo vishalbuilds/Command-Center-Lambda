@@ -1,6 +1,5 @@
 
-from urllib import response
-from common.strategy_factory import StrategyFactory
+from common.models.strategy_factory import StrategyFactory
 from common.models.lambda_response import LambdaResponse
 from common.models.event_sanitizer import EventSanitizer
 from common.models.trace_id import TraceId
@@ -54,7 +53,7 @@ def lambda_handler(event, context) ->LambdaResponse:
 
         LOGGER.info(f"Strategy response: {response}")
         LOGGER.add_metadata("response", response)
-
+        #final return from lambda
         return LambdaResponse.success(message="Strategy executed successfully", data=response)
     except Exception as e:
         LOGGER.add_tempdata("error",str(e))
