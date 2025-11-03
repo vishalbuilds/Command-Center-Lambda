@@ -29,7 +29,7 @@ def lambda_handler(event, context) ->LambdaResponse:
         LOGGER.add_metadata("invocation_source", invocation_source)
         event=extract_event_data(event,invocation_source)
     except Exception as e:
-        LOGGER.add_tempdata("errror",str(e))
+        LOGGER.add_tempdata("error",str(e))
         LOGGER.error(f"Error in processing event from function url invocation: {e}")
         return LambdaResponse.error(message=str(e))
     
@@ -37,7 +37,8 @@ def lambda_handler(event, context) ->LambdaResponse:
     #init Event Sanitizer to remove PII information
     try:
         LOGGER.info("Processing event sanitizer to remove sensitive data")
-        event = EventSanitizer(event).data()
+        sanitizer = EventSanitizer(event)
+        event = sanitizer.get_sanitized_data()
     except Exception as e:
         LOGGER.add_tempdata("error",str(e))
         LOGGER.error(f"Error in processing Event Sanitizer: {e}")

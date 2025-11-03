@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any, Literal
 
 class LambdaResponse:
 
+    @staticmethod
     def _build_response(
         result: Literal['success', 'error'],
         message: Optional[str],
@@ -18,7 +19,6 @@ class LambdaResponse:
         return {
             "statusCode": status_code,
             "result": result,
-            "headers": {"Content-Type": "application/json"},
             "body": json.dumps({
                 "message": message,
                 "data": data,
@@ -26,15 +26,15 @@ class LambdaResponse:
             }),
         }
     
+    @staticmethod
     def success(
-        self,
         message: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None,
         ts: Optional[datetime] = None,     
         status_code: int = 200,
         
     ) -> Dict[str, Any]:
-        return self._build_response(
+        return LambdaResponse._build_response(
             status_code=status_code,
             result='success',
             message=message,
@@ -42,14 +42,14 @@ class LambdaResponse:
             ts=ts
         )
 
+    @staticmethod
     def error(
-        self,
         message: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None,
         ts: Optional[datetime] = None,
         status_code: int = 400,
     ) -> Dict[str, Any]:
-        return self._build_response(
+        return LambdaResponse._build_response(
             status_code=status_code,
             result='error',
             message=message,

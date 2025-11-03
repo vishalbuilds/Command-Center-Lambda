@@ -3,80 +3,129 @@ import os
 import inspect
 import datetime
 import json
-import re
 from typing import Dict, Any, Optional
 
+
 class Logger:
-    """Enhanced logging utility with JSON output, metadata, and sensitive data redaction."""
+    """Simple and robust logging utility with JSON output and metadata."""
 
-    SENSITIVE_KEYS = ["password", "secret", "token", "apikey", "key", "credentials"]
+    _instance = None
+    _initialized = False
 
-    def __init__(self, loggername: str = "default_logger_name"):
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(Logger, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, loggername: str = "app_logger"):
         """Initializes the logger."""
+        if self._initialized:
+            return
+
         self._metadata: Dict[str, Any] = {}
         self._tempdata: Dict[str, Any] = {}
 
-        # Remove existing handlers (Lambda compatibility)
-        while logging.root.handlers:
-            logging.root.removeHandler(logging.root.handlers[0])
+        # Configure root logger
+        root_logger = logging.getLogger()
+        if root_logger.handlers:
+            for handler in root_logger.handlers[:]:
+                root_logger.removeHandler(handler)
+        
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(message)s",
+            force=True
+        )
 
-        logging.basicConfig(level=logging.DEBUG, format="%(message)s")
         self.logger = logging.getLogger(loggername)
-        self.set_level("WARNING")
-        self.silence_noisy_libs()
+        self.logger.setLevel(logging.INFO)
+        self._initialized = True
 
-    def redact_sensitive_info(self, msg: str) -> str:
-        """Redacts sensitive information from log messages."""
-        for key in self.SENSITIVE_KEYS:
-            msg = re.sub(rf'("?{key}"?\s*[:=]\s*"?)([^"]+)("?)', r'\1[REDACTED]\3', msg, flags=re.IGNORECASE)
-        return msg
+    def _log(self, level: int, msg: str) -> None:
+        """Internal logging method."""
+        if not self.logger.isEnabledFor(level):
+            return
 
-    def log(self, level: int, msg: str, *args: Any, **kwargs: Any) -> None:
-        """Logs message with structured JSON output."""
-        if self.logger.isEnabledFor(level):
-            msg = self.redact_sensitive_info(msg)
-            frame = inspect.currentframe().f_back
-            info = inspect.getframeinfo(frame)
+        try:
+            # Get caller info
+            frame = inspect.currentframe()
+            caller_frame = frame.f_back.f_back if frame and frame.f_back else None
+            
+            if caller_frame:
+                info = inspect.getframeinfo(caller_frame)
+                function = info.function
+                filename = os.path.basename(info.filename)
+                line = info.lineno
+            else:
+                function = "unknown"
+                filename = "unknown"
+                line = 0
 
-            log_entry: Dict[str, Any] = {
-                "level": logging.getLevelName(level),
-                "message": msg,
-                "function": info.function,
-                "path": os.path.normpath(info.filename),
-                "line": info.lineno,
+            # Build log entry
+            log_entry = {
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "level": logging.getLevelName(level),
+                "message": str(msg),
+                "function": function,
+                "file": filename,
+                "line": line,
             }
 
-            data = self.get_metadata().copy()
-            data.update(self.get_tempdata())
-            log_entry.update(data)
+            # Add metadata if exists
+            if self._metadata:
+                log_entry.update(self._metadata)
+            
+            # Add tempdata if exists
+            if self._tempdata:
+                log_entry.update(self._tempdata)
 
-            try:
-                self.logger._log(level, json.dumps(log_entry, ensure_ascii=False), args, **kwargs)
-            except TypeError:
-                log_entry["message"] = "Error serializing log message. Original Message: " + msg
-                self.logger._log(level, json.dumps(log_entry, ensure_ascii=False), args, **kwargs)
+            # Log the entry
+            self.logger.log(level, json.dumps(log_entry, ensure_ascii=False, default=str))
 
-        self._tempdata.clear()
+        except Exception as e:
+            fallback = {
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "level": "ERROR",
+                "message": f"Logging failed: {e}. Original: {msg}"
+            }
+            self.logger.error(json.dumps(fallback, default=str))
+        finally:
+            self._tempdata.clear()
 
-    def debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        self.log(logging.DEBUG, msg, *args, **kwargs)
+    def debug(self, msg: str) -> None:
+        """Log debug message."""
+        self._log(logging.DEBUG, msg)
 
-    def info(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        self.log(logging.INFO, msg, *args, **kwargs)
+    def info(self, msg: str) -> None:
+        """Log info message."""
+        self._log(logging.INFO, msg)
 
-    def warning(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        self.log(logging.WARNING, msg, *args, **kwargs)
+    def warning(self, msg: str) -> None:
+        """Log warning message."""
+        self._log(logging.WARNING, msg)
 
-    def error(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        self.log(logging.ERROR, msg, *args, **kwargs)
+    def error(self, msg: str) -> None:
+        """Log error message."""
+        self._log(logging.ERROR, msg)
 
-    def fatal(self, msg: str, *args: Any, **kwargs: Any) -> None:
-        self.log(logging.FATAL, msg, *args, **kwargs)
+    def critical(self, msg: str) -> None:
+        """Log critical message."""
+        self._log(logging.CRITICAL, msg)
 
     def set_metadata(self, key_values: Optional[Dict[str, Any]]) -> None:
-        """Sets metadata for logging."""
-        self._metadata = key_values if key_values else {}
+        """Sets persistent metadata for all logs."""
+        self._metadata = key_values.copy() if key_values else {}
+
+    def add_metadata(self, key: str, value: Any) -> None:
+        """Adds a key-value pair to persistent metadata."""
+        if key is not None:
+            self._metadata[key] = value
+
+    def add_tempdata(self, key: str, value: Any) -> None:
+        """Adds temporary data for the next log only."""
+        if key is not None:
+            self._tempdata[key] = value
+        self._log(logging.ERROR, f"context_message: {key}={value}")
 
     def init_context(self, context: Optional[Any] = None) -> None:
         """
@@ -96,64 +145,13 @@ class Logger:
             context_data["aws_request_id"] = context.aws_request_id
 
         # Extract info from Lambda environment variables
-        for key, env_var in [("function_name", "aws_lambda_function_name"),
-                             ("region", "aws_region"),
-                             ("version", "aws_lambda_function_version"),
-                             ]:
+        for key, env_var in [
+            ("function_name", "AWS_LAMBDA_FUNCTION_NAME"),
+            ("region", "AWS_REGION"),
+            ("version", "AWS_LAMBDA_FUNCTION_VERSION"),
+        ]:
             value = os.environ.get(env_var)
             if value:
                 context_data[key] = value
 
         self.set_metadata(context_data)
-
-    def get_metadata(self) -> Dict[str, Any]:
-        """Retrieves metadata."""
-        return self._metadata
-
-    def add_metadata(self, key: str, value: Any) -> None:
-        """Adds key-value pair to metadata."""
-        if key is not None:
-            self._metadata[key] = value
-
-    def delete_metadata(self, key: str) -> None:
-        """Deletes metadata key."""
-        if key is not None and key in self._metadata:
-            del self._metadata[key]
-
-    def get_tempdata(self) -> Dict[str, Any]:
-        """Retrieves temporary data."""
-        return self._tempdata
-
-    def add_tempdata(self, key: str, value: Any) -> None:
-        """Adds key-value pair to temporary data."""
-        if key is not None:
-            self._tempdata[key] = value
-
-    @staticmethod
-    def noisy_libs() -> list[str]:
-        """Returns a list of noisy libraries."""
-        return ["boto3", "botocore"]
-
-    def silence_noisy_libs(self) -> None:
-        """Silences noisy libraries by setting their log level to WARNING."""
-        for lib in self.noisy_libs():
-            logging.getLogger(lib).setLevel(logging.WARNING)
-
-    def set_level(self, level: str) -> None:
-        """Sets logging level."""
-        log_level = level.upper()
-
-        levels = {
-            "DEBUG": logging.DEBUG,
-            "INFO": logging.INFO,
-            "WARNING": logging.WARNING,
-            "ERROR": logging.ERROR,
-            "CRITICAL": logging.CRITICAL,
-        }
-
-        if log_level in levels:
-            self.info(f"Setting log level to {log_level}")
-            self.logger.setLevel(levels[log_level])
-        else:
-            self.warning(f"Invalid log level '{log_level}'. Using default WARNING level.")
-            self.logger.setLevel(logging.WARNING)

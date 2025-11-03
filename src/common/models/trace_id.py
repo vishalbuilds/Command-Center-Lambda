@@ -6,7 +6,7 @@ class TraceId:
     @staticmethod
     def init(context):
         global TRACE_ID_CACHE
-        TRACE_ID_CACHE = context.aws_request_id if context else str(uuid.uuid4())
+        TRACE_ID_CACHE = context["aws_request_id"] if context.get("aws_request_id","") else str(uuid.uuid4())
 
     @staticmethod
     def get():

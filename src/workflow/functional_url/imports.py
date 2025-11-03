@@ -1,4 +1,4 @@
-from status_checker import StatusChecker
+from workflow.functional_url.status_checker_functional_url import StatusCheckerFunctionalUrl
 
 
-FUNCTION_URL=["StatusChecker"]
+FUNCTION_URL=["StatusCheckerFunctionalUrl"]

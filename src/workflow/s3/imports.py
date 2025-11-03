@@ -1,5 +1,5 @@
-from status_checker import StatusChecker
+from workflow.s3.status_checker_s3 import StatusCheckerS3
 
 
 #invocation source class
-S3=["StatusChecker"]
+S3=["StatusCheckerS3"]

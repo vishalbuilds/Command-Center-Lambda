@@ -7,9 +7,11 @@ It demonstrates OOP, logging, and robust error handling.
 import uuid
 import time
 import os
-from utils.s3_utils import get_object, put_object, delete_object, list_objects, create_presigned_url
-from utils.transcribe_utils import check_transcription_status
+
 from common.models.logger import Logger
+
+from common.utils_methods.transcribe_utils import check_transcription_status
+from common.utils_methods.s3_utils import get_object, put_object, delete_object, list_objects, create_presigned_url
 
 
 class S3RemovePii:
