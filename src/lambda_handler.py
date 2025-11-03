@@ -1,30 +1,63 @@
-from common.strategy_factory import StrategyFactory
-from common.response_builder import ResponseBuilder
-from common.event_sanitizer import EventSanitizer
-from common.logger import Logger
+
+from common.models.strategy_factory import StrategyFactory
+from common.models.lambda_response import LambdaResponse
+from common.models.event_sanitizer import EventSanitizer
+from common.models.trace_id import TraceId
+from common.models.find_invocation_source import get_invocation_source,extract_event_data
+from common.models.logger import Logger
+
 
 LOGGER = Logger(__name__)
 
-def lambda_handler(event, context) ->ResponseBuilder:
+def lambda_handler(event, context) ->LambdaResponse:
 
-    LOGGER.info(f"Lambda handler started with {event}.")
-
-    sanitizer = EventSanitizer(event)
-
-    clean_event = sanitizer.data  # get sanitized dictionary
+    invocation_source=None
+    #init trace id process
+    try:
+        LOGGER.info(f"Lambda handler initialized with context: {context}.")
+        LOGGER.init_context(context)
+        TraceId.init(context)
+        LOGGER.add_metadata("trace_id", TraceId.get())
+    except Exception as e:
+        LOGGER.add_tempdata("error",str(e))
+        LOGGER.error(f"Error in processing Trace Id: {e}")
+        return LambdaResponse.error(message=str(e))
     
-    LOGGER.info(f"Sanitized event: {clean_event}"   )
+    #init checking event source and extracting usefull event
+    try:
+        invocation_source=get_invocation_source(event)
+        LOGGER.add_metadata("invocation_source", invocation_source)
+        event=extract_event_data(event,invocation_source)
+    except Exception as e:
+        LOGGER.add_tempdata("error",str(e))
+        LOGGER.error(f"Error in processing event from function url invocation: {e}")
+        return LambdaResponse.error(message=str(e))
+    
+
+    #init Event Sanitizer to remove PII information
+    try:
+        LOGGER.info("Processing event sanitizer to remove sensitive data")
+        sanitizer = EventSanitizer(event)
+        event = sanitizer.get_sanitized_data()
+    except Exception as e:
+        LOGGER.add_tempdata("error",str(e))
+        LOGGER.error(f"Error in processing Event Sanitizer: {e}")
+        return LambdaResponse.error(message=str(e))
+    
     
     # Use StrategyFactory to choose and run strategy
-    strategy = StrategyFactory(clean_event)
     try:
-        response = strategy.execute()
+        LOGGER.info(f"Processing event: {event}")
+        LOGGER.add_metadata("event", event)
+
+        response = StrategyFactory(event,invocation_source).execute()
+
         LOGGER.info(f"Strategy response: {response}")
-        # Build final Lambda response
-        final_response = ResponseBuilder().success(data=response)
+        LOGGER.add_metadata("response", response)
+        #final return from lambda
+        return LambdaResponse.success(message="Strategy executed successfully", data=response)
     except Exception as e:
-        LOGGER.error(f"Error executing strategy: {e}")
-        final_response = ResponseBuilder().error(message=str(e))
-    LOGGER.info(f"Final response: {final_response}")
-    
-    return final_response
+        LOGGER.add_tempdata("error",str(e))
+        LOGGER.error(f"Error in processing final execution: {e}")
+        return LambdaResponse.error(message=str(e))
+
