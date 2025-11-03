@@ -2,7 +2,7 @@
 Unit tests for event_sanitizer module.
 """
 import pytest
-from common.event_sanitizer import EventSanitizer
+from common.models.event_sanitizer import EventSanitizer
 
 def test_sanitize_sensitive_keys():
     event = {
@@ -13,7 +13,7 @@ def test_sanitize_sensitive_keys():
     }
     
     sanitizer = EventSanitizer(event)
-    result = sanitizer.data
+    result = sanitizer.get_sanitized_data()
     
     assert result["password"] == "***password***"
     assert result["api_key"] == "***api_key***"
@@ -32,7 +32,7 @@ def test_sanitize_nested_dict():
     }
     
     sanitizer = EventSanitizer(event)
-    result = sanitizer.data
+    result = sanitizer.get_sanitized_data()
     
     assert result["user"]["password"] == "***password***"
     assert result["user"]["name"] == "John Doe"
@@ -47,7 +47,7 @@ def test_sanitize_list():
     }
     
     sanitizer = EventSanitizer(event)
-    result = sanitizer.data
+    result = sanitizer.get_sanitized_data()
     
     assert result["users"][0]["token"] == "***token***"
     assert result["users"][0]["name"] == "User 1"
@@ -64,7 +64,7 @@ def test_sanitize_patterns():
     }
     
     sanitizer = EventSanitizer(event)
-    result = sanitizer.data
+    result = sanitizer.get_sanitized_data()
     
     # SSN should be masked
     assert "123-45-6789" not in result["data"]["description"]
@@ -85,7 +85,7 @@ def test_custom_mask_text():
     }
     
     sanitizer = EventSanitizer(event, mask_text="[REDACTED]")
-    result = sanitizer.data
+    result = sanitizer.get_sanitized_data()
     
     assert result["password"] == "[REDACTED]"
     assert result["api_key"] == "[REDACTED]"
@@ -100,7 +100,7 @@ def test_non_sensitive_data_preserved():
     }
     
     sanitizer = EventSanitizer(event)
-    result = sanitizer.data
+    result = sanitizer.get_sanitized_data()
     
     assert result["username"] == "john_doe"
     assert result["description"] == "This is a normal description"

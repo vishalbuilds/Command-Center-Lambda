@@ -3,7 +3,7 @@ Unit tests for ses_utils module.
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from utils.ses_utils import send_email, _validate_email_address, _prepare_email_addresses
+from common.utils_methods.ses_utils import send_email, _validate_email_address, _prepare_email_addresses
 
 def test_validate_email_address_valid():
     valid_emails = [
@@ -54,7 +54,7 @@ def test_prepare_email_addresses_invalid_to():
             ["valid@example.com", "invalid_email"]
         )
 
-@patch('utils.ses_utils.ses_client')
+@patch('common.utils_methods.ses_utils.ses_client')
 def test_send_email_success(mock_ses_client):
     mock_client = MagicMock()
     mock_ses_client.return_value = mock_client
@@ -70,7 +70,7 @@ def test_send_email_success(mock_ses_client):
     assert result == {"MessageId": "test-id"}
     mock_client.send_email.assert_called_once()
 
-@patch('utils.ses_utils.ses_client')
+@patch('common.utils_methods.ses_utils.ses_client')
 def test_send_email_error(mock_ses_client):
     mock_client = MagicMock()
     mock_ses_client.return_value = mock_client

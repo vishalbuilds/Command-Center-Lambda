@@ -3,7 +3,7 @@ Unit tests for sqs_utils module.
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from utils.sqs_utils import (send_message, receive_message, delete_message,
+from common.utils_methods.sqs_utils import (send_message, receive_message, delete_message,
                            change_message_visibility, _create_message_attributes)
 
 def test_create_message_attributes_empty():
@@ -24,7 +24,7 @@ def test_create_message_attributes():
         "key3": {"StringValue": "True", "DataType": "String"}
     }
 
-@patch('utils.sqs_utils.sqs_client')
+@patch('common.utils_methods.sqs_utils.sqs_client')
 def test_send_message_success(mock_sqs_client):
     mock_client = MagicMock()
     mock_sqs_client.return_value = mock_client
@@ -44,7 +44,7 @@ def test_send_message_success(mock_sqs_client):
         MessageAttributes={"key": {"StringValue": "value", "DataType": "String"}}
     )
 
-@patch('utils.sqs_utils.sqs_client')
+@patch('common.utils_methods.sqs_utils.sqs_client')
 def test_receive_message_success(mock_sqs_client):
     mock_client = MagicMock()
     mock_sqs_client.return_value = mock_client
@@ -68,7 +68,7 @@ def test_receive_message_success(mock_sqs_client):
     assert result["MessageId"] == "test-id"
     assert result["Body"] == "test message"
 
-@patch('utils.sqs_utils.sqs_client')
+@patch('common.utils_methods.sqs_utils.sqs_client')
 def test_delete_message_success(mock_sqs_client):
     mock_client = MagicMock()
     mock_sqs_client.return_value = mock_client
@@ -80,7 +80,7 @@ def test_delete_message_success(mock_sqs_client):
         ReceiptHandle="test-receipt"
     )
 
-@patch('utils.sqs_utils.sqs_client')
+@patch('common.utils_methods.sqs_utils.sqs_client')
 def test_change_message_visibility_success(mock_sqs_client):
     mock_client = MagicMock()
     mock_sqs_client.return_value = mock_client

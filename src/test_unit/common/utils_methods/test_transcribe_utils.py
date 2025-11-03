@@ -3,9 +3,9 @@ Unit tests for transcribe_utils module.
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from utils.transcribe_utils import check_transcription_status
+from common.utils_methods.transcribe_utils import check_transcription_status
 
-@patch('utils.transcribe_utils.s3_client')
+@patch('common.utils_methods.transcribe_utils.s3_client')
 def test_check_transcription_status_completed(mock_s3_client):
     mock_client = MagicMock()
     mock_s3_client.return_value = mock_client
@@ -19,7 +19,7 @@ def test_check_transcription_status_completed(mock_s3_client):
     assert result == "COMPLETED"
     mock_client.get_transcription_job.assert_called_once_with("test-job")
 
-@patch('utils.transcribe_utils.s3_client')
+@patch('common.utils_methods.transcribe_utils.s3_client')
 def test_check_transcription_status_failed(mock_s3_client):
     mock_client = MagicMock()
     mock_s3_client.return_value = mock_client
@@ -33,7 +33,7 @@ def test_check_transcription_status_failed(mock_s3_client):
     assert result == "FAILED"
     mock_client.get_transcription_job.assert_called_once_with("test-job")
 
-@patch('utils.transcribe_utils.s3_client')
+@patch('common.utils_methods.transcribe_utils.s3_client')
 def test_check_transcription_status_unknown(mock_s3_client):
     mock_client = MagicMock()
     mock_s3_client.return_value = mock_client
@@ -47,7 +47,7 @@ def test_check_transcription_status_unknown(mock_s3_client):
     assert result == "UNKNOWN"
     mock_client.get_transcription_job.assert_called_once_with("test-job")
 
-@patch('utils.transcribe_utils.s3_client')
+@patch('common.utils_methods.transcribe_utils.s3_client')
 def test_check_transcription_status_error(mock_s3_client):
     mock_client = MagicMock()
     mock_s3_client.return_value = mock_client
