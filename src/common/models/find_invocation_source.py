@@ -1,7 +1,7 @@
 """
 AWS Lambda Invocation Source Detector
 
-from https://michaelbrewer.github.io/aws-lambda-events/connect/
+from https://michaelbrewer.github.io/aws-lambda-events
 
 A utility to identify common Lambda invocation sources:
 - Amazon Connect
@@ -52,7 +52,7 @@ def _is_eventbridge(event: dict) -> bool:
     """Check if the event is from EventBridge/CloudWatch Events."""
     # EventBridge events have both 'detail-type' and 'source' fields
     # But make sure it's not an S3 event (which can also have 'source')
-    return "detail-type" in event and "source" in event and "Records" not in event
+    return "detail-type" in event and event.get("source","")!="aws.events" and "Records" not in event
 
 def _is_function_url(request_context: dict) -> bool:
     """Check if the event is from a Lambda Function URL."""
