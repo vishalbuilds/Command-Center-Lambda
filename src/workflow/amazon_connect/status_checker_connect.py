@@ -1,4 +1,6 @@
-class StatusCheckerConnect:
+from common.models.default_strategy import DefaultStrategy
+
+class StatusCheckerConnect(DefaultStrategy):
     def __init__(self,event):
         self.event = event
         
