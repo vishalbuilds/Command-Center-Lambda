@@ -6,10 +6,7 @@ from datetime import datetime, timezone
 
 LOGGER = Logger(__name__)
 
-connect_utils = ConnectUtils(
-    os.environ.get("REGION"),
-    os.environ.get("INSTANCE_ID"),
-)
+
 MAX_CONTACT_ACTIVE_TIME = 2  # hours
 RP_ARN_LIMITS = 100
 
@@ -18,6 +15,8 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
     def __init__(self, event):
         self.event = event
         self.instance_id = os.environ.get("INSTANCE_ID")
+        self.region = os.environ.get("REGION")
+        self.connect_utils = ConnectUtils(self.region, self.instance_id)
         LOGGER.info(
             f"Initializing AutoCleanUpActiveContacts for instance: {self.instance_id}"
         )
@@ -52,7 +51,7 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
         LOGGER.info(f"Fetching routing profiles for instance: {self.instance_id}")
 
         try:
-            rp_paginator = connect_utils.get_paginator("list_routing_profiles")
+            rp_paginator = self.connect_utils._get_paginator("list_routing_profiles")
             routing_profile_arns = []
 
             for page in rp_paginator.paginate(InstanceId=self.instance_id):
@@ -91,7 +90,7 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
 
             LOGGER.add_tempdata("filter_params", filter_params)
 
-            response = connect_utils.get_current_user_data(filter_params)
+            response = self.connect_utils.get_current_user_data(filter_params)
             user_data_list = response.get("UserDataList", [])
 
             LOGGER.info(f"Processing {len(user_data_list)} users for active contacts")
@@ -152,7 +151,7 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
         LOGGER.info(f"Processing contact validation for contact_id: {contact_id}")
 
         try:
-            response = connect_utils.describe_contact(contact_id)
+            response = self.connect_utils.describe_contact(contact_id)
             contact = response.get("Contact")
 
             if not contact:
@@ -191,7 +190,7 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 LOGGER.info(
                     f"Attempting to disconnect contact {contact_id} (active for {duration_hours:.2f} hours)"
                 )
-                connect_utils.stop_contact(contact_id)
+                self.connect_utils.stop_contact(contact_id)
                 LOGGER.add_tempdata("disconnected_contact_id", contact_id)
                 LOGGER.info(f"Successfully disconnected contact {contact_id}")
 
