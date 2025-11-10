@@ -1,9 +1,9 @@
-![Build Status](https://github.com/YOUR_USERNAME/CommandCenterLambda/workflows/CI/badge.svg)
-![Code Coverage](https://codecov.io/gh/YOUR_USERNAME/CommandCenterLambda/branch/main/graph/badge.svg)
-![Linting](https://github.com/YOUR_USERNAME/CommandCenterLambda/workflows/CI/badge.svg)
-![License](https://img.shields.io/github/license/YOUR_USERNAME/CommandCenterLambda)
+![Build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/python-src-ci.yml/badge.svg)
+![Code Coverage](https://codecov.io/gh/vishalbuilds/CommandCenterLambda/branch/main/graph/badge.svg)
+![Linting](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/pr-validation-ci.yml/badge.svg)
+![License](https://img.shields.io/github/license/vishalbuilds/CommandCenterLambda)
 ![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
-![Last Commit](https://img.shields.io/github/last-commit/YOUR_USERNAME/CommandCenterLambda)
+![Last Commit](https://img.shields.io/github/last-commit/vishalbuilds/CommandCenterLambda)
 
 # CommandCenter Lambda
 
