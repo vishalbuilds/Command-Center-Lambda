@@ -5,6 +5,7 @@ from workflow.amazon_connect.auto_clean_up_active_contacts import (
 from workflow.amazon_connect.phone_number_format import PhoneNumberFormat
 from workflow.amazon_connect.dynamodb_lookup import DynamodbLookup
 from workflow.amazon_connect.dynamodb_lookup_check import DynamoDBLookupCheck
+from workflow.amazon_connect.dynamodb_store_attributes import DynamoDBStoreAttributes
 
 
 # invocation source class
@@ -14,4 +15,5 @@ AMAZON_CONNECT = [
     "PhoneNumberFormat",
     "DynamodbLookup",
     "DynamoDBLookupCheck",
+    "DynamoDBStoreAttributes",
 ]

@@ -3,18 +3,36 @@
   "context": {
     "@aws-cdk/core:newStyleStackSynthesis": false,
     "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
-    "aws:accountId": "842675979580",
-    "projectName": "CommandCenterLambda",
-    "environment": "prod",
+    "aws:accountId": "8526755748",
     "region": "us-east-1",
     "tags": {
       "Owner": "vishal_singh",
-      "GitHub": "VishalBuilds",
-      "Purpose": "Learning CDK",
+      "GitHubUsername": "VishalBuilds",
       "Environment": "Prod"
     },
-    "S3": {
-      "Recording_Bucket": "Recording_Bucket"
+    "lambdaDetails": {
+      "functionName": "CommandCenterLambda",
+      "description": "A Single Lambda function handling multiple request strategies"
+    },
+    "vpc": {
+      "vpc": "123abc",
+      "subnet": ["123xyz"]
+    },
+    "iamRole": {
+      "name": "CommandCenterLambda",
+      "description": "IAM role for CommandCenterLambda to execute strategy workflows"
+    },
+    "connect": {
+      "resources": [
+        "arn:aws:connect:us-east-1:123456789012:instance/abc-123",
+        "arn:aws:connect:us-east-1:123456789012:instance/xyz-789"
+      ]
+    },
+    "s3": {
+      "resources": ["arn:aws:s3:::my-bucket", "arn:aws:s3:::my-bucket/*"]
+    },
+    "dynamoDB": {
+      "resources": ["arn:aws:dynamodb:us-east-1:123456789012:table/MyTable"]
     }
   }
 }
