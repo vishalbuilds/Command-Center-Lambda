@@ -1,7 +1,17 @@
-from workflow.amazon_connect.s3_remove_pii import S3RemovePii
 from workflow.amazon_connect.status_checker_connect import StatusCheckerConnect
+from workflow.amazon_connect.auto_clean_up_active_contacts import (
+    AutoCleanUpActiveContacts,
+)
+from workflow.amazon_connect.phone_number_format import PhoneNumberFormat
+from workflow.amazon_connect.dynamodb_lookup import DynamodbLookup
+from workflow.amazon_connect.dynamodb_lookup_check import DynamoDBLookupCheck
 
 
-
-#invocation source class
-AMAZON_CONNECT=["S3RemovePii", "S3GetFile", "StatusCheckerConnect"]
+# invocation source class
+AMAZON_CONNECT = [
+    "StatusCheckerConnect",
+    "AutoCleanUpActiveContacts",
+    "PhoneNumberFormat",
+    "DynamodbLookup",
+    "DynamoDBLookupCheck",
+]

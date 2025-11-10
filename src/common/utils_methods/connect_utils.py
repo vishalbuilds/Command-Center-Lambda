@@ -8,18 +8,19 @@ and call control actions.
 All methods include logging and error handling for robust production use.
 """
 
-from common.client_record import connect_client
+from common.client_record.connect_client import connect_client
 from common.models.logger import Logger
+
 logger = Logger(__name__)
 
 
 class ConnectUtils:
-    def __init__(self,region_name:str,instanceId:str):
-        self.region_name=region_name
-        self.instanceId=instanceId
-        self.connect_client=connect_client(region_name)
+    def __init__(self, region_name: str, instanceId: str):
+        self.region_name = region_name
+        self.instanceId = instanceId
+        self.connect_client = connect_client(region_name)
 
-    def _get_paginator(self,service: str):
+    def _get_paginator(self, service: str):
         """Return a paginator for the given Amazon Connect service operation.
 
         Args:
@@ -40,7 +41,6 @@ class ConnectUtils:
             logger.error(f"Error in getting paginator: {e}")
             raise
 
-
     def list_contact_flow(self):
         """List contact flow summaries for a Connect instance.
 
@@ -56,8 +56,10 @@ class ConnectUtils:
             list is returned.
         """
         try:
-            logger.info(f'Listing all contact flow from region:{self.region_name}')
-            response_paginator = self._get_paginator('list_contact_flows', self.region_name).paginate(
+            logger.info(f"Listing all contact flow from region:{self.region_name}")
+            response_paginator = self._get_paginator(
+                "list_contact_flows"
+            ).paginate(
                 InstanceId=self.instanceId,
             )
             return [
@@ -68,7 +70,6 @@ class ConnectUtils:
         except Exception as e:
             logger.error(f"Error in listing contact flows: {e}")
             raise
-
 
     def list_routing_profile(self):
         """List routing profile summaries for a Connect instance.
@@ -82,8 +83,10 @@ class ConnectUtils:
             list is returned.
         """
         try:
-            logger.info(f'Listing all routing profile from region:{self.region_name}')
-            response_paginator = self._get_paginator('list_routing_profiles', self.region_name).paginate(
+            logger.info(f"Listing all routing profile from region:{self.region_name}")
+            response_paginator = self._get_paginator(
+                "list_routing_profiles"
+            ).paginate(
                 InstanceId=self.instanceId,
             )
             return [
@@ -112,8 +115,10 @@ class ConnectUtils:
             intended `list_queues` implementation and replaces that duplicate.
         """
         try:
-            logger.info(f'Listing all queue from region:{self.region_name}')
-            response_paginator = self._get_paginator('list_queues', self.region_name).paginate(
+            logger.info(f"Listing all queue from region:{self.region_name}")
+            response_paginator = self._get_paginator(
+                "list_queues"
+            ).paginate(
                 InstanceId=self.instanceId,
             )
             return [
@@ -124,7 +129,7 @@ class ConnectUtils:
         except Exception as e:
             logger.error(f"Error in listing queues: {e}")
             raise
-        
+
     def describe_contact(self, contactId: str):
         """Retrieve detailed information about a specific contact in Amazon Connect.
 
@@ -141,18 +146,24 @@ class ConnectUtils:
                 logged before re-raising.
         """
         try:
-            logger.info(f'Describing contact id {contactId} from region:{self.region_name}')
+            logger.info(
+                f"Describing contact id {contactId} from region:{self.region_name}"
+            )
             return self.connect_client.describe_contact(
-                                                        instanceId=self.instanceId,
-                                                        ContactId=contactId
-                                                        )
+                instanceId=self.instanceId, ContactId=contactId
+            )
         except Exception as e:
             logger.error(f"Error in describing contact id {contactId}: {e}")
             raise
 
-    def start_outbound_voice_contact(self,name: str, DestinationPhoneNumber: str, ContactFlowId: str, 
-                                SourcePhoneNumber: str = None,
-                                QueueId: str = None):
+    def start_outbound_voice_contact(
+        self,
+        name: str,
+        DestinationPhoneNumber: str,
+        ContactFlowId: str,
+        SourcePhoneNumber: str = None,
+        QueueId: str = None,
+    ):
         """Initiate an outbound voice contact through Amazon Connect.
 
         Args:
@@ -174,20 +185,26 @@ class ConnectUtils:
         """
         try:
             if SourcePhoneNumber and ContactFlowId and QueueId:
-                logger.error("add either queue name or source phone number or contact flow id")
-            logger.info(f'Inititing outbound voice contact all queue from region:{self.region_name},DestinationPhoneNumber:{DestinationPhoneNumber}')
+                logger.error(
+                    "add either queue name or source phone number or contact flow id"
+                )
+            logger.info(
+                f"Inititing outbound voice contact all queue from region:{self.region_name},DestinationPhoneNumber:{DestinationPhoneNumber}"
+            )
             return self.connect_client.start_outbound_voice_contact(
-                                                                        name=name,
-                                                                        DestinationPhoneNumber=DestinationPhoneNumber,
-                                                                        ContactFlowId=ContactFlowId,
-                                                                        InstanceId=self.InstanceId,
-                                                                        SourcePhoneNumber=SourcePhoneNumber,
-                                                                        QueueId=QueueId
-                                                                        )
+                name=name,
+                DestinationPhoneNumber=DestinationPhoneNumber,
+                ContactFlowId=ContactFlowId,
+                InstanceId=self.InstanceId,
+                SourcePhoneNumber=SourcePhoneNumber,
+                QueueId=QueueId,
+            )
         except Exception as e:
-            logger.error(f"Error in start outbound voice contact with DestinationPhoneNumber{DestinationPhoneNumber} : {e}")
+            logger.error(
+                f"Error in start outbound voice contact with DestinationPhoneNumber{DestinationPhoneNumber} : {e}"
+            )
             raise
-        
+
     def stop_contact(self, contactId: str):
         """Terminate an active contact in Amazon Connect.
 
@@ -204,14 +221,14 @@ class ConnectUtils:
                 logged before re-raising.
         """
         try:
-            logger.info(f'Disconnecting contact id {contactId} from region:{self.region_name}')
+            logger.info(
+                f"Disconnecting contact id {contactId} from region:{self.region_name}"
+            )
             self.connect_client.stop_contact(
-                                            instanceId=self.instanceId,
-                                            ContactId=contactId,
-                                            DisconnectReason={
-                                                'Code':'OTHERS' 
-                                            }
-                                            )
+                instanceId=self.instanceId,
+                ContactId=contactId,
+                DisconnectReason={"Code": "OTHERS"},
+            )
         except Exception as e:
             logger.error(f"Error in disconnecting contactId{contactId}: {e}")
             raise
@@ -233,16 +250,13 @@ class ConnectUtils:
                 logged before re-raising.
         """
         try:
-            logger.info(f'tag contact id {contactId} from region:{self.region_name}')
+            logger.info(f"tag contact id {contactId} from region:{self.region_name}")
             self.connect_client.tag_contact(
-                                            instanceId=self.instanceId,
-                                            ContactId=contactId,
-                                            Tags=tags
-                                            )
+                instanceId=self.instanceId, ContactId=contactId, Tags=tags
+            )
         except Exception as e:
             logger.error(f"Error in tagging contactId{contactId}: {e}")
             raise
-
 
     def get_current_user_data(self, filters: dict[str, list[str]]):
         """Retrieve current user data from Amazon Connect.
@@ -254,12 +268,10 @@ class ConnectUtils:
             A dictionary containing the current user data from the Amazon Connect API.
         """
         try:
-            logger.info(f'Getting current user data from region:{self.region_name}')
+            logger.info(f"Getting current user data from region:{self.region_name}")
             return self.connect_client.get_current_user_data(
-                                                            instanceId=self.instanceId,
-                                                            Filters=filters
-                                                            )
+                instanceId=self.instanceId, Filters=filters
+            )
         except Exception as e:
             logger.error(f"Error in getting current user data: {e}")
             raise
-

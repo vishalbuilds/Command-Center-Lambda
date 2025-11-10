@@ -30,12 +30,8 @@ class Logger:
         if root_logger.handlers:
             for handler in root_logger.handlers[:]:
                 root_logger.removeHandler(handler)
-        
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(message)s",
-            force=True
-        )
+
+        logging.basicConfig(level=logging.DEBUG, format="%(message)s", force=True)
 
         self.logger = logging.getLogger(loggername)
         self.logger.setLevel(logging.INFO)
@@ -50,7 +46,7 @@ class Logger:
             # Get caller info
             frame = inspect.currentframe()
             caller_frame = frame.f_back.f_back if frame and frame.f_back else None
-            
+
             if caller_frame:
                 info = inspect.getframeinfo(caller_frame)
                 function = info.function
@@ -74,19 +70,21 @@ class Logger:
             # Add metadata if exists
             if self._metadata:
                 log_entry.update(self._metadata)
-            
+
             # Add tempdata if exists
             if self._tempdata:
                 log_entry.update(self._tempdata)
 
             # Log the entry
-            self.logger.log(level, json.dumps(log_entry, ensure_ascii=False, default=str))
+            self.logger.log(
+                level, json.dumps(log_entry, ensure_ascii=False, default=str)
+            )
 
         except Exception as e:
             fallback = {
                 "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 "level": "ERROR",
-                "message": f"Logging failed: {e}. Original: {msg}"
+                "message": f"Logging failed: {e}. Original: {msg}",
             }
             self.logger.error(json.dumps(fallback, default=str))
         finally:

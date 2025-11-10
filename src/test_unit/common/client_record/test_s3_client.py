@@ -17,18 +17,18 @@ class TestS3Client:
         client = s3_client()
         
         assert client == mock_client
-        mock_boto3_client.assert_called_once_with('s3', region_name='us-east-1')
+        mock_boto3_client.assert_called_once_with('s3')
     
     @patch('common.client_record.s3_client.boto3.client')
-    def test_s3_client_with_region(self, mock_boto3_client):
-        """Test S3 client creation with specific region."""
+    def test_s3_client_no_parameters(self, mock_boto3_client):
+        """Test S3 client creation without parameters."""
         mock_client = MagicMock()
         mock_boto3_client.return_value = mock_client
         
-        client = s3_client(region_name='us-west-2')
+        client = s3_client()
         
         assert client == mock_client
-        mock_boto3_client.assert_called_once_with('s3', region_name='us-west-2')
+        mock_boto3_client.assert_called_once_with('s3')
     
     @patch('common.client_record.s3_client.boto3.client')
     def test_s3_client_exception(self, mock_boto3_client):
