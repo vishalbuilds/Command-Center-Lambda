@@ -1,5 +1,5 @@
 ![Build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/python-src-ci.yml/badge.svg)
-![Code Coverage](https://codecov.io/gh/vishalbuilds/CommandCenterLambda/branch/main/graph/badge.svg)
+![Code Coverage](https://codecov.io/gh/vishalbuilds/Command-Center-Lambda/branch/main/graph/badge.svg)
 ![Linting](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/pr-validation-ci.yml/badge.svg)
 ![License](https://img.shields.io/github/license/vishalbuilds/CommandCenterLambda)
 ![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
