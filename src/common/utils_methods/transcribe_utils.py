@@ -5,7 +5,7 @@ This class provides high-level, descriptive methods for starting, getting, and c
 All methods include logging and error handling for robust production use.
 """
 
-from common.client_record import transcribe_client
+from common.client_record.transcribe_client import transcribe_client
 from common.models.logger import Logger
 
 logger = Logger(__name__)

@@ -3,13 +3,22 @@ Unit tests for s3_utils module.
 """
 import pytest
 from unittest.mock import patch, MagicMock
-from common.utils_methods.s3_utils import (
-    get_object, put_object, delete_object, 
-    list_objects, create_presigned_url
-)
+from common.utils_methods.s3_utils import S3Utils
 
 
 class TestS3Utils:
+    
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_init(self, mock_s3_client):
+        """Test S3Utils initialization."""
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        
+        utils = S3Utils('test-bucket')
+        
+        assert utils.bucket == 'test-bucket'
+        assert utils.s3_client == mock_client
+        mock_s3_client.assert_called_once()
     
     @patch('common.utils_methods.s3_utils.s3_client')
     def test_get_object_success(self, mock_s3_client):
@@ -21,7 +30,8 @@ class TestS3Utils:
             'ContentType': 'text/plain'
         }
         
-        result = get_object('test-bucket', 'test-key', 'us-east-1')
+        utils = S3Utils('test-bucket')
+        result = utils.get_object('test-key')
         
         assert result['Body'] == b'test content'
         mock_client.get_object.assert_called_once_with(
@@ -36,8 +46,9 @@ class TestS3Utils:
         mock_s3_client.return_value = mock_client
         mock_client.get_object.side_effect = Exception("Object not found")
         
+        utils = S3Utils('test-bucket')
         with pytest.raises(Exception, match="Object not found"):
-            get_object('test-bucket', 'test-key', 'us-east-1')
+            utils.get_object('test-key')
     
     @patch('common.utils_methods.s3_utils.s3_client')
     def test_put_object_success(self, mock_s3_client):
@@ -46,7 +57,8 @@ class TestS3Utils:
         mock_s3_client.return_value = mock_client
         mock_client.put_object.return_value = {'ETag': '"abc123"'}
         
-        result = put_object('test-bucket', 'test-key', 'test content', 'us-east-1')
+        utils = S3Utils('test-bucket')
+        result = utils.put_object('test-key', 'test content')
         
         assert result['ETag'] == '"abc123"'
         mock_client.put_object.assert_called_once_with(
@@ -62,7 +74,8 @@ class TestS3Utils:
         mock_s3_client.return_value = mock_client
         mock_client.delete_object.return_value = {'DeleteMarker': True}
         
-        result = delete_object('test-bucket', 'test-key', 'us-east-1')
+        utils = S3Utils('test-bucket')
+        result = utils.delete_object('test-key')
         
         assert result['DeleteMarker'] is True
         mock_client.delete_object.assert_called_once_with(
@@ -82,7 +95,8 @@ class TestS3Utils:
             ]
         }
         
-        result = list_objects('test-prefix', 'test-bucket', 'us-east-1')
+        utils = S3Utils('test-bucket')
+        result = utils.list_objects('test-prefix')
         
         assert len(result['Contents']) == 2
         mock_client.list_objects_v2.assert_called_once_with(
@@ -97,9 +111,11 @@ class TestS3Utils:
         mock_s3_client.return_value = mock_client
         mock_client.generate_presigned_url.return_value = 'https://test-url.com'
         
-        result = create_presigned_url(
-            'test-bucket', 'test-key', 'us-east-1', 
-            expiration=7200, operation='get_object'
+        utils = S3Utils('test-bucket')
+        result = utils.create_presigned_url(
+            'test-key', 
+            expiration=7200, 
+            operation='get_object'
         )
         
         assert result == 'https://test-url.com'

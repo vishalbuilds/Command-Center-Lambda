@@ -8,7 +8,7 @@ deleting secrets.
 All methods include logging and error handling for robust production use.
 """
 
-from common.client_record import secretsmanager_client
+from common.client_record.secretsmanager_client import secretsmanager_client
 from common.models.logger import Logger
 
 logger = Logger(__name__)
@@ -17,6 +17,7 @@ logger = Logger(__name__)
 class SecretsManagerUtils:
 
     def __init__(self, region_name: str):
+        self.region_name = region_name
         self.secretsmanager_client = secretsmanager_client(region_name)
 
     def get_secret(self, secret_name: str) -> str:

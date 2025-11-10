@@ -37,7 +37,7 @@ class TestStrategyFactory:
         
         assert factory._validate_strategy() is False
     
-    @patch('common.models.strategy_factory.ALL_INVOKE_TYPE_LIST', ['StatusCheckerConnect'])
+    @patch('common.models.strategy_factory.ALL_INVOCATION_TYPE_LIST', ['StatusCheckerConnect'])
     def test_validate_strategy_invalid_request_type(self):
         """Test validation with invalid request_type."""
         event = {"request_type": "InvalidRequestType"}
@@ -82,7 +82,7 @@ class TestStrategyFactory:
     def test_execute_success(self, mock_pass_event, mock_initiate):
         """Test successful execution."""
         mock_strategy_obj = MagicMock()
-        mock_strategy_obj.do_validate.return_value = True
+        mock_strategy_obj.do_validate.return_value = (None, True)  # (result, has_error)
         mock_strategy_obj.do_operation.return_value = {"result": "success"}
         
         event = {"request_type": "StatusCheckerConnect"}

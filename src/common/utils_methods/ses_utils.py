@@ -9,7 +9,7 @@ All methods include logging and error handling for robust production use.
 """
 
 from typing import List, Optional, Dict, Any
-from common.client_record import ses_client
+from common.client_record.ses_client import ses_client
 from common.models.logger import Logger
 import re
 

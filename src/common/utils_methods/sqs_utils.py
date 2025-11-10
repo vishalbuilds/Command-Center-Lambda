@@ -8,7 +8,7 @@ deleting messages, and managing message attributes.
 All methods include logging and error handling for robust production use.
 """
 
-from common.client_record import sqs_client
+from common.client_record.sqs_client import sqs_client
 from common.models.logger import Logger
 
 logger = Logger(__name__)

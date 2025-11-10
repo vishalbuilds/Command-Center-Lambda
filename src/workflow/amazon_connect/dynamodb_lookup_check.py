@@ -1,4 +1,4 @@
-from dynamodb_lookup import DynamodbLookup
+from workflow.amazon_connect.dynamodb_lookup import DynamodbLookup
 from common.models.logger import Logger
 
 LOGGER = Logger(__name__)

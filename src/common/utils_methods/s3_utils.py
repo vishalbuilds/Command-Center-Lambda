@@ -6,7 +6,7 @@ All methods include logging and error handling for robust production use.
 """
 
 from common.models.logger import Logger
-from common.client_record import s3_client
+from common.client_record.s3_client import s3_client
 from typing import Literal
 
 logger = Logger(__name__)

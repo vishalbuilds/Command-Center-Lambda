@@ -8,7 +8,7 @@ and call control actions.
 All methods include logging and error handling for robust production use.
 """
 
-from common.client_record import connect_client
+from common.client_record.connect_client import connect_client
 from common.models.logger import Logger
 
 logger = Logger(__name__)
@@ -58,7 +58,7 @@ class ConnectUtils:
         try:
             logger.info(f"Listing all contact flow from region:{self.region_name}")
             response_paginator = self._get_paginator(
-                "list_contact_flows", self.region_name
+                "list_contact_flows"
             ).paginate(
                 InstanceId=self.instanceId,
             )
@@ -85,7 +85,7 @@ class ConnectUtils:
         try:
             logger.info(f"Listing all routing profile from region:{self.region_name}")
             response_paginator = self._get_paginator(
-                "list_routing_profiles", self.region_name
+                "list_routing_profiles"
             ).paginate(
                 InstanceId=self.instanceId,
             )
@@ -117,7 +117,7 @@ class ConnectUtils:
         try:
             logger.info(f"Listing all queue from region:{self.region_name}")
             response_paginator = self._get_paginator(
-                "list_queues", self.region_name
+                "list_queues"
             ).paginate(
                 InstanceId=self.instanceId,
             )
