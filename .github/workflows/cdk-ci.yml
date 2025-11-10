@@ -71,7 +71,7 @@ jobs:
           echo "✅ All tests passed!"
       
       - name: Upload test artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: cdk-test-results
@@ -80,7 +80,7 @@ jobs:
             cdk/test/__snapshots__/
       
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         if: always()
         with:
           directory: ./cdk/coverage
@@ -135,7 +135,7 @@ jobs:
           CI: true
       
       - name: Upload CDK artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cdk-synth-output
           path: cdk/cdk.out/
