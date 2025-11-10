@@ -46,8 +46,18 @@ jobs:
       - name: Run tests with coverage
         run: |
           coverage run -m pytest src/test_unit/
+          coverage xml
           coverage report -m > cov.txt
           cat cov.txt
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          verbose: true
       - name: Upload coverage file
         uses: actions/upload-artifact@v4
         with:
