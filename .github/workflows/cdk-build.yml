@@ -85,13 +85,25 @@ jobs:
           name: cdk-test-results
           path: |
             cdk/coverage/
+            cdk/test-results/
             cdk/test/__snapshots__/
+
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./cdk/coverage
+          flags: cdk
+          fail_ci_if_error: false
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./cdk/test-results
+          flags: cdk
 
       - name: Check coverage threshold
         run: |

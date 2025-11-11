@@ -19,5 +19,16 @@ module.exports = {
       lines: 70,
       statements: 70
     }
-  }
+  },
+  reporters: [
+    'default',
+    ['jest-junit', {
+      outputDirectory: 'test-results',
+      outputName: 'junit.xml',
+      classNameTemplate: '{filepath}',
+      titleTemplate: '{title}',
+      ancestorSeparator: ' › ',
+      usePathForSuiteName: true
+    }]
+  ]
 };
