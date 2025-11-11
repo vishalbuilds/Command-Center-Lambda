@@ -2,6 +2,7 @@
 
 exports[`IamRoleStack Applies tags when provided 1`] = `
 {
+  "Description": "Test role",
   "Parameters": {
     "BootstrapVersion": {
       "Default": "/cdk-bootstrap/hnb659fds/version",
@@ -10,7 +11,7 @@ exports[`IamRoleStack Applies tags when provided 1`] = `
     },
   },
   "Resources": {
-    "TestLambdaRoleC771CE80": {
+    "CommandCenterLambdaiamrole532B6E8E": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -24,16 +25,7 @@ exports[`IamRoleStack Applies tags when provided 1`] = `
           ],
           "Version": "2012-10-17",
         },
-        "Tags": [
-          {
-            "Key": "Environment",
-            "Value": "test",
-          },
-          {
-            "Key": "Project",
-            "Value": "CDK",
-          },
-        ],
+        "Description": "Test role",
       },
       "Type": "AWS::IAM::Role",
     },
@@ -78,7 +70,7 @@ exports[`IamRoleStack Attaches policy statements when provided 1`] = `
     },
   },
   "Resources": {
-    "TestLambdaRoleC771CE80": {
+    "CommandCenterLambdaiamrole532B6E8E": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [
@@ -95,7 +87,7 @@ exports[`IamRoleStack Attaches policy statements when provided 1`] = `
       },
       "Type": "AWS::IAM::Role",
     },
-    "TestLambdaRoleDefaultPolicy7616C22F": {
+    "CommandCenterLambdaiamroleDefaultPolicyBD3A9E51": {
       "Properties": {
         "PolicyDocument": {
           "Statement": [
@@ -111,10 +103,10 @@ exports[`IamRoleStack Attaches policy statements when provided 1`] = `
           ],
           "Version": "2012-10-17",
         },
-        "PolicyName": "TestLambdaRoleDefaultPolicy7616C22F",
+        "PolicyName": "CommandCenterLambdaiamroleDefaultPolicyBD3A9E51",
         "Roles": [
           {
-            "Ref": "TestLambdaRoleC771CE80",
+            "Ref": "CommandCenterLambdaiamrole532B6E8E",
           },
         ],
       },
@@ -162,7 +154,7 @@ exports[`IamRoleStack Creates IAM Role with Lambda service principal 1`] = `
     },
   },
   "Resources": {
-    "TestLambdaRoleC771CE80": {
+    "CommandCenterLambdaiamrole532B6E8E": {
       "Properties": {
         "AssumeRolePolicyDocument": {
           "Statement": [

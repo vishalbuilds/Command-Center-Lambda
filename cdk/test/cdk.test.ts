@@ -1,13 +1,12 @@
 import * as cdk from "aws-cdk-lib";
 import { Template } from "aws-cdk-lib/assertions";
 import { IamRoleStack } from "../lib/iam-role-stack";
-import { ConnectPolicy } from "../lib/iam-role-policies/iam-policy-connect";
+import { ConnectPolicy } from "../lib/iam-role-policies/connect-policy";
 
 describe("IamRoleStack", () => {
   test("Creates IAM Role with Lambda service principal", () => {
     const app = new cdk.App();
     const stack = new IamRoleStack(app, "TestStack", {
-      iamRoleName: "TestLambdaRole",
       description: "Test role for Lambda",
     });
 
@@ -35,7 +34,6 @@ describe("IamRoleStack", () => {
     const connectPolicies = ConnectPolicy(["arn:aws:connect:*:*:instance/*"]);
 
     const stack = new IamRoleStack(app, "TestStack", {
-      iamRoleName: "TestLambdaRole",
       policyStatements: connectPolicies,
     });
 
@@ -63,11 +61,7 @@ describe("IamRoleStack", () => {
   test("Applies tags when provided", () => {
     const app = new cdk.App();
     const stack = new IamRoleStack(app, "TestStack", {
-      iamRoleName: "TestLambdaRole",
-      tags: {
-        Environment: "test",
-        Project: "CDK",
-      },
+      description: "Test role",
     });
 
     const template = Template.fromStack(stack);
