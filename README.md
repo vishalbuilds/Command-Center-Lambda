@@ -1,9 +1,14 @@
-![Build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/python-src-ci.yml/badge.svg)
+![CDK build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/cdk-ci.yml/badge.svg)
+![Python build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/python-ci.yml/badge.svg)
+![PR validation](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/pr-validation-ci.yml/badge.svg)
 ![Code Coverage](https://codecov.io/gh/vishalbuilds/Command-Center-Lambda/branch/main/graph/badge.svg)
-![Linting](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/pr-validation-ci.yml/badge.svg)
 ![License](https://img.shields.io/github/license/vishalbuilds/CommandCenterLambda)
 ![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
+[![TypeScript Version](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 ![Last Commit](https://img.shields.io/github/last-commit/vishalbuilds/CommandCenterLambda)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vishalbuilds/Command-Center-Lambda/.github%2Fworkflows%2Fcdk-ci.yml?label=cdk%20ci)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vishalbuilds/Command-Center-Lambda/.github%2Fworkflows%2Fpr-validation-ci.yml?label=pr%20validation)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vishalbuilds/Command-Center-Lambda/.github%2Fworkflows%2Fpython-ci.yml?label=python%20ci)
 
 # CommandCenter Lambda
 
