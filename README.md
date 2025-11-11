@@ -9,7 +9,7 @@
 
 # CommandCenter Lambda
 
-This repository contains the source code and infrastructure definition for the CommandCenter project, a collection of AWS Lambda functions designed for various backend tasks and automations.
+This repository contains the source code and infrastructure definition for the CommandCenterLambda project, a collection of AWS Lambda functions designed for various backend tasks and automations.
 
 ## 📖 Overview
 
@@ -31,22 +31,27 @@ The repository is organized to separate source code, infrastructure, and test da
 CommandCenterLambda/
 ├── .github/
 │   └── workflows/              # GitHub Actions CI/CD workflows
+│       ├── cdk-ci.yml
 │       ├── lambda-container-ci.yml
 │       ├── pr-validation-ci.yml
-│       └── python-src-ci.yml
+│       └── python-ci.yml
 ├── cdk/                        # AWS CDK infrastructure code (TypeScript)
 │   ├── bin/
 │   │   └── cdk.ts              # CDK App entry point
-│   ├── lib/                    # CDK stack definitions
-│   │   ├── New-bucket-event.ts
-│   │   └── remove-pii-s3-stack.ts
+│   ├── lib/
+│   │   ├── iam-role-policies/  # iam role policy defination
+|   |   │   ├── connect-policy.ts
+|   |   |   ├── s3-policy.ts
+|   |   |   └── dynamodb-policy.ts
+│   │   ├── iam-role-stack.ts   # iam role stack
+│   │   └── lambda-stack.ts     # lambda stack
 │   ├── test/                   # CDK tests
 │   ├── cdk.json                # CDK configuration
 │   ├── package.json            # Node.js dependencies
 │   └── README.md               # CDK-specific documentation
 ├── scripts/
 │   └── entry.sh                # Container entry script
-├── src/                        # Source code for Lambda functions
+├── src/                        # Source code for Lambda functions and utilities
 │   ├── common/                 # Shared utilities and models
 │   │   ├── client_record/
 │   │   ├── constants/
@@ -58,7 +63,7 @@ CommandCenterLambda/
 │   │   ├── api_gateway_rest/
 │   │   ├── functional_url/
 │   │   └── s3/
-│   ├── test_data/              # Sample JSON payloads for testing
+│   ├── test_data/              # Sample JSON payloads for testing with fail and pass scenarios
 │   │   ├── amazon_connect_workflow/
 │   │   ├── s3/
 │   │   └── StatusChecker/
@@ -67,13 +72,14 @@ CommandCenterLambda/
 │   │   ├── workflow/
 │   │   ├── conftest.py
 │   │   └── test_lambda_handler.py
-│   └── lambda_handler.py       # Main Lambda handler entry point
+│   ├── lambda_handler.py       # Main Lambda handler entry point
+|   ├── requirements.txt        # Python production dependencies
+|   └── requirements.dev.txt    # Python python development dependencies
 ├── .gitignore
 ├── Dockerfile                  # Dockerfile for building the Lambda container image
-├── LICENSE
-├── README.md                   # This file
-├── requirements.txt            # Python production dependencies
-└── requirements.dev.txt        # Python development dependencies
+├── LICENSE                     # MIT License
+└── README.md                   # Repository README
+
 ```
 
 ## 🚀 AWS CDK Infrastructure
@@ -84,7 +90,7 @@ To deploy the infrastructure, you would typically run commands like:
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
+npm install
 
 # Navigate to CDK directory
 cd cdk
@@ -93,7 +99,7 @@ cd cdk
 cdk synth
 
 # Deploy the stack
-cdk deploy
+cdk deploy -c infraVersion=infraVersion-1 -c awsAccount=123456789012 -c region=us-east-1 -c env=dev -c ecrRepositoryArn=arn:aws:ecr:us-east-1:123456789012:repository/Command-Center-Lambda -c imageTag=imageTag
 ```
 
 ## 🧪 Testing
@@ -121,11 +127,11 @@ You can build and test the Lambda functions locally using a container, which sim
 
 ### 1. Build the Lambda Container
 
-The `Dockerfile` is set up to build an image that can run your Lambda function code. The `lambda_handler_env` build argument specifies which function handler to use.
+The `Dockerfile` is set up to build an image that can run your Lambda function code.
 
 ```bash
-# Example: Build an image for a specific handler
-podman build --build-arg lambda_handler_env=lambda_handler.lambda_handler --build-arg build=local -t lambda-core .
+# Example: Build an image
+podman build --build-arg lambda_handler=lambda_handler.lambda_handler --build-arg build=local -t command-center-lambda .
 ```
 
 ### 2. Run the Lambda Container
@@ -133,7 +139,7 @@ podman build --build-arg lambda_handler_env=lambda_handler.lambda_handler --buil
 Run the container, mapping a local port (e.g., 9000) to the container's port 8080.
 
 ```bash
-podman run -p 9000:8080 lambda-core
+podman run -p 9000:8080 command-center-lambda
 ```
 
 ### 3. Test the Container by Sending a Request
@@ -144,27 +150,8 @@ Use `curl` or any API client to send a POST request to the local endpoint, mimic
 curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/StatusChecker/StatusChecker.json"
 ```
 
-## 📝 Function Details
-
-1. Function 1
-2. Function 2
-3. Function 3
-
-### Function 1
-
-Description of Function 1.
-
-### Function 2
-
-Description of Function 2.
-
-### Function 3
-
-Description of Function 3.
-
 ## 🔮 Future Plans
 
 - [ ] Implement a full CI/CD pipeline with automated testing and deployment.
-- [ ] Add comprehensive unit and integration tests for all functions.
 - [ ] Expand the collection of Lambda functions to include new features.
 - [ ] Single deployment process with config file.
