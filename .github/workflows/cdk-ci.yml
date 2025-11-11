@@ -28,30 +28,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Debug Repo Structure
-        run: |
-          echo "=== Current working directory ==="
-          pwd
-          echo ""
-          echo "=== Repo root contents ==="
-          ls -la
-          echo ""
-          echo "=== cdk/ directory check ==="
-          if [ -d "cdk" ]; then
-            echo "cdk/ exists. Contents:"
-            ls -la cdk/
-            echo "cdk/lib/ subcheck:"
-            if [ -d "cdk/lib" ]; then ls -la cdk/lib/; else echo "cdk/lib/ missing or empty"; fi
-          else
-            echo "ERROR: cdk/ directory not found at repo root!"
-          fi
-          echo ""
-          echo "=== Git status for verification ==="
-          git status --short || echo "Git status failed"
-          echo ""
-          echo "=== Full file tree (top-level) ==="
-          tree -L 2 . || find . -maxdepth 2 -type f | head -15
-        shell: bash
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -62,9 +38,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: List lib files
-        run: ls -la lib/
 
       - name: Run linter
         run: npm run lint --if-present
