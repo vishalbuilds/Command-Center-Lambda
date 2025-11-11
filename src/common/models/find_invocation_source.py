@@ -156,7 +156,7 @@ def extract_event_data(event: dict, invocation_source: InvocationSource) -> dict
         >>> print(data[0]['s3']['bucket']['name'])
     """
     if invocation_source == "AMAZON_CONNECT":
-        return event.get("Details", {}).get("ContactData", {})
+        return event.get("Details", {}).get("ContactData", {}).get("Attributes", {})
     elif invocation_source in ("API_GATEWAY_REST", "API_GATEWAY_HTTP", "FUNCTION_URL"):
         return event.get("requestContext", {})
     elif invocation_source == "S3":

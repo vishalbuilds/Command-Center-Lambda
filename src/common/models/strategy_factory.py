@@ -1,5 +1,3 @@
-from operator import is_
-from os import error
 from common.models.logger import Logger
 from common.models.lambda_response import LambdaResponse
 from workflow.amazon_connect.imports import *
@@ -68,10 +66,12 @@ class StrategyFactory:
         try:
             self._initiate_strategy()
             self._pass_event_to_strategy()
-            result, has_error = self.strategy_class_obj.do_validate()
-            if not has_error:
+
+            # with failed validation result, error=true, some_error and with passed validation result, error=true, None
+            result, error = self.strategy_class_obj.do_validate()
+            if not result:
                 LOGGER.error(
-                    f"validation failed from called strategy_class with error:{result}"
+                    f"validation failed from called strategy_class with error:{error}"
                 )
                 raise Exception("validation failed from called strategy_class")
         except Exception as e:

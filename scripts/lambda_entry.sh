@@ -1,7 +1,8 @@
 #!/bin/sh
 set -e
 
-lambda_handler=$1
+# Get lambda handler from environment variable
+lambda_handler="${lambda_handler:-lambda_handler.lambda_handler}"
 
 if [ -z "${AWS_LAMBDA_RUNTIME_API}" ]; then
     echo "🟢 Starting in LOCAL mode using Lambda RIE (listening on :8080)..."
@@ -17,6 +18,6 @@ if [ -z "${AWS_LAMBDA_RUNTIME_API}" ]; then
     exec /aws-lambda-rie python -m awslambdaric "$lambda_handler"
 
 else
-    echo "🚀 Starting in aws cloud mode using lambda runtime interface directly"
+    echo "🚀 Starting in AWS cloud mode using lambda runtime interface directly"
     exec python3 -m awslambdaric "$lambda_handler"
 fi

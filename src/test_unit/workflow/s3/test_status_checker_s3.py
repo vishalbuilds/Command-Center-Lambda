@@ -17,7 +17,7 @@ class TestStatusCheckerS3:
         """Test do_validate always returns True."""
         event = {"test": "data"}
         checker = StatusCheckerS3(event)
-        assert checker.do_validate() is True
+        assert checker.do_validate() == (True, None)
     
     def test_do_operation_success(self):
         """Test successful do_operation execution."""

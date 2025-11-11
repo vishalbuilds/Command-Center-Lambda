@@ -1,17 +1,18 @@
 class StatusCheckerAPIGateWayHTTP:
-    def __init__(self,event):
+    def __init__(self, event):
         self.event = event
-        
+
     def do_validate(self):
-        return True
-    
+        return (True, None)
+
     def do_operation(self):
         """
         Handle status check request for API Gateway HTTP.
         """
         return {
-            'statusCode': 200,
-            'message': 'Status check successful',
-            'service': 'api_gateway_http',
-            'status': 'healthy'
+            "statusCode": 200,
+            "message": "Status check successful",
+            "service": "api_gateway_http",
+            "status": "healthy",
+            "event": self.event,
         }
