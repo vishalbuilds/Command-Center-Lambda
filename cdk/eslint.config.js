@@ -1,11 +1,11 @@
 // eslint.config.js
-import tsPlugin from "@typescript-eslint/eslint-plugin";
-import tsParser from "@typescript-eslint/parser";
+const tsPlugin = require("@typescript-eslint/eslint-plugin");
+const tsParser = require("@typescript-eslint/parser");
 
 /**
  * ESLint v9 Flat Config
  */
-export default [
+module.exports = [
   // Global ignores
   {
     ignores: [
