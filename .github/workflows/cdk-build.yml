@@ -87,21 +87,19 @@ jobs:
             cdk/coverage/
             cdk/test/__snapshots__/
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        if: always()
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
         with:
-          directory: ./cdk/coverage
-          flags: cdk
-          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Check coverage threshold
         run: |
           if [ -f coverage/coverage-summary.json ]; then
             COVERAGE=$(cat coverage/coverage-summary.json | grep -o '"lines":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' | grep -o 'pct":[0-9.]*' | cut -d':' -f2)
             echo "Test coverage: $COVERAGE%"
-            if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-              echo "::warning:: Test coverage ($COVERAGE%) is below 80%"
+            if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+              echo "::warning:: Test coverage ($COVERAGE%) is below 90%"
             fi
           fi
 
