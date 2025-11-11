@@ -3,36 +3,41 @@
   "context": {
     "@aws-cdk/core:newStyleStackSynthesis": false,
     "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
-    "aws:accountId": "8526755748",
-    "region": "us-east-1",
-    "tags": {
-      "Owner": "vishal_singh",
-      "GitHubUsername": "VishalBuilds",
-      "Environment": "Prod"
-    },
-    "lambdaDetails": {
-      "functionName": "CommandCenterLambda",
+    "cdkTags": {
+      "owner": "vishal_singh",
+      "gitHub": "https://github.com/vishalbuilds",
+      "email": "vibisingh@gmail.com",
+      "repository": "https://github.com/vishalbuilds/Command-Center-Lambda",
       "description": "A Single Lambda function handling multiple request strategies"
     },
-    "vpc": {
-      "vpc": "123abc",
-      "subnet": ["123xyz"]
-    },
-    "iamRole": {
-      "name": "CommandCenterLambda",
-      "description": "IAM role for CommandCenterLambda to execute strategy workflows"
-    },
-    "connect": {
-      "resources": [
-        "arn:aws:connect:us-east-1:123456789012:instance/abc-123",
-        "arn:aws:connect:us-east-1:123456789012:instance/xyz-789"
-      ]
-    },
-    "s3": {
-      "resources": ["arn:aws:s3:::my-bucket", "arn:aws:s3:::my-bucket/*"]
-    },
-    "dynamoDB": {
-      "resources": ["arn:aws:dynamodb:us-east-1:123456789012:table/MyTable"]
+    "infraVersion-1": {
+      "envVar": {
+        "NAME": "Command-Center-Lambda",
+        "DYNAMODB_TABLE_QUEUE_OBJECT": "queue-object-table-infraVersion-1-us-east-1",
+        "CONNECT_INSTANCE_ID": "arn:aws:connect:us-east-1:123456789012:instance/abc-123"
+      },
+      "us-east-1": {
+        "lambda": {
+          "functionName": "Command-Center-Lambda",
+          "description": "Lambda function with multiple strategies",
+          "containerImage": "123456789012.dkr.ecr.us-east-1.amazonaws.com/Command-Center-Lambda:latest"
+        },
+        "vpc": {
+          "vpcId": "123abc",
+          "subnets": ["subnet-123abc", "subnet-456xyz"]
+        },
+        "connect": {
+          "resources": [
+            "arn:aws:connect:us-east-1:123456789012:instance/abc-123"
+          ]
+        },
+        "s3": {
+          "resources": ["arn:aws:s3:::my-bucket", "arn:aws:s3:::my-bucket/*"]
+        },
+        "dynamoDB": {
+          "resources": ["arn:aws:dynamodb:us-east-1:123456789012:table/MyTable"]
+        }
+      }
     }
   }
 }
