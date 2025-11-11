@@ -167,6 +167,7 @@ cython_debug/
 node_modules/
 *.js
 !jest.config.js
+!eslint.config.js
 .yarn/
 .pnp.*
 
