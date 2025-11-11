@@ -82,7 +82,7 @@ class TestStrategyFactory:
     def test_execute_success(self, mock_pass_event, mock_initiate):
         """Test successful execution."""
         mock_strategy_obj = MagicMock()
-        mock_strategy_obj.do_validate.return_value = (None, True)  # (result, has_error)
+        mock_strategy_obj.do_validate.return_value = (True, None)  # (success, error)
         mock_strategy_obj.do_operation.return_value = {"result": "success"}
         
         event = {"request_type": "StatusCheckerConnect"}

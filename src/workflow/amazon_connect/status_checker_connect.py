@@ -6,7 +6,7 @@ class StatusCheckerConnect(DefaultStrategy):
         self.event = event
 
     def do_validate(self):
-        return True
+        return True, None
 
     def do_operation(self):
         """
@@ -17,4 +17,5 @@ class StatusCheckerConnect(DefaultStrategy):
             "message": "Status check successful",
             "service": "amazon_connect",
             "status": "healthy",
+            "event": self.event,
         }

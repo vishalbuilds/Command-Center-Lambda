@@ -206,10 +206,8 @@ class TestFindInvocationSource:
         }
         result = extract_event_data(event, "AMAZON_CONNECT")
         assert result == {
-            "Attributes": {
-                "key1": "value1",
-                "key2": "value2"
-            }
+            "key1": "value1",
+            "key2": "value2"
         }
     
     def test_extract_event_data_api_gateway(self):

@@ -104,9 +104,9 @@ cdk deploy -c infraVersion=infraVersion-1 -c awsAccount=123456789012 -c region=u
 
 ## 🧪 Testing
 
-This project uses `pytest` for unit testing with coverage reporting.
+### 1. Run Python Unit Tests
 
-### Run Unit Tests
+The lambda functions uses `pytest` for unit testing with coverage reporting.
 
 ```bash
 # Run tests with coverage report
@@ -119,36 +119,213 @@ python -m pytest src/test_unit/ -v
 python -m pytest src/test_unit/test_lambda_handler.py -v
 ```
 
+The cdk infrastructure uses `jest` for unit testing with coverage reporting.
+
+### 2. Run Typescript Unit Tests
+
+```bash
+# Run all tests with coverage report
+npx jest --coverage --coverageReporters="text" --coverageReporters="html" --verbose
+
+# Run tests without coverage
+npx jest --verbose
+
+# Run specific test file
+npx jest cdk/test/lambda-stack.test.ts --verbose
+
+```
+
 The HTML coverage report will be generated in the `htmlcov/` directory.
 
 ## 🛠️ Local Development & Testing
 
 You can build and test the Lambda functions locally using a container, which simulates the AWS Lambda execution environment. This project is configured to use `podman`, but `docker` can also be used.
 
-### 1. Build the Lambda Container
+### Prerequisites
 
-The `Dockerfile` is set up to build an image that can run your Lambda function code.
+- Git installed
+- Docker or Podman installed
+- AWS credentials (if testing functions that interact with AWS services)
+- curl or any HTTP client for testing
+
+### 1. Clone the Repository
+
+First, clone the repository to your local machine:
 
 ```bash
-# Example: Build an image
-podman build --build-arg lambda_handler=lambda_handler.lambda_handler --build-arg build=local -t command-center-lambda .
+# Clone via HTTPS
+git clone https://github.com/vishalbuilds/CommandCenterLambda.git
+
+# Or clone via SSH
+git clone git@github.com:vishalbuilds/CommandCenterLambda.git
+
+# Navigate to the project directory
+cd CommandCenterLambda
 ```
 
-### 2. Run the Lambda Container
+### 2. Build the Lambda Container
 
-Run the container, mapping a local port (e.g., 9000) to the container's port 8080.
+The `Dockerfile` uses a build argument to track build metadata.
+
+#### Build Arguments
+
+| Argument | Required | Default | Description | Example |
+|----------|----------|---------|-------------|---------|
+| `build` | No | `local-dev` | Build identifier/tag for tracking | `local`, `v1.0.0`, `prod-123` |
+
+#### Build Commands
 
 ```bash
+# Basic build with Docker (build defaults to "local-dev")
+docker build -t command-center-lambda .
+
+# Basic build with Podman
+podman build -t command-center-lambda .
+
+# Build with custom build tag
+docker build --build-arg build=v1.2.3 -t command-center-lambda:v1.2.3 .
+```
+
+#### Build for Production (ECR)
+
+```bash
+# Build and tag for ECR
+docker build \
+  --build-arg build=prod-$(date +%Y%m%d-%H%M%S) \
+  -t 123456789012.dkr.ecr.us-east-1.amazonaws.com/command-center-lambda:latest .
+
+# Push to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
+docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/command-center-lambda:latest
+```
+
+### 3. Run the Lambda Container
+
+Run the container with AWS credentials and configuration. The container exposes port 8080 internally, which you map to your desired local port (e.g., 9000).
+
+#### Basic Run (without AWS credentials)
+
+```bash
+# Using Docker
+docker run -p 9000:8080 command-center-lambda
+
+# Using Podman
 podman run -p 9000:8080 command-center-lambda
 ```
 
-### 3. Test the Container by Sending a Request
+#### Run with AWS Credentials and Configuration
+
+For Lambda functions that need to interact with AWS services (S3, DynamoDB, Connect, etc.), pass your AWS credentials and region:
+
+```bash
+# Using Docker
+docker run -p 9000:8080 \
+  -e AWS_ACCESS_KEY_ID=your_access_key_here \
+  -e AWS_SECRET_ACCESS_KEY=your_secret_key_here \
+  -e AWS_REGION=us-east-1 \
+  -e AWS_DEFAULT_REGION=us-east-1 \
+  command-center-lambda
+
+# Using Podman
+podman run -p 9000:8080 \
+  -e AWS_ACCESS_KEY_ID=your_access_key_here \
+  -e AWS_SECRET_ACCESS_KEY=your_secret_key_here \
+  -e AWS_REGION=us-east-1 \
+  -e AWS_DEFAULT_REGION=us-east-1 \
+  command-center-lambda
+```
+
+#### Run with AWS Session Token (for temporary credentials)
+
+```bash
+docker run -p 9000:8080 \
+  -e AWS_ACCESS_KEY_ID=your_access_key_here \
+  -e AWS_SECRET_ACCESS_KEY=your_secret_key_here \
+  -e AWS_SESSION_TOKEN=your_session_token_here \
+  -e AWS_REGION=us-east-1 \
+  command-center-lambda
+```
+
+#### Run with Volume Mount for Test Data
+
+Mount the test data directory to easily access test files from within the container:
+
+```bash
+docker run -p 9000:8080 \
+  -v $(pwd)/src/test_data:/test_data \
+  -e AWS_ACCESS_KEY_ID=your_access_key_here \
+  -e AWS_SECRET_ACCESS_KEY=your_secret_key_here \
+  -e AWS_REGION=us-east-1 \
+  command-center-lambda
+```
+
+### 4. Test the Lambda Function
 
 Use `curl` or any API client to send a POST request to the local endpoint, mimicking an AWS Lambda invocation. The test payloads are located in `src/test_data/`.
 
+#### Test with Local File
+
 ```bash
+# Test StatusChecker function
 curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/StatusChecker/StatusChecker.json"
+
+# Test Amazon Connect workflow
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/amazon_connect_workflow/pass_scenario.json"
+
+# Test S3 workflow
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/s3/s3_event.json"
 ```
+
+#### Test with Inline JSON
+
+```bash
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"key": "value", "test": true}'
+```
+
+#### Test with Pretty Output
+
+```bash
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/StatusChecker/StatusChecker.json" | python -m json.tool
+```
+
+### 5. Complete Local Testing Workflow
+
+Here's a complete example workflow for local testing:
+
+```bash
+# Step 1: Build the image
+docker build -t command-center-lambda .
+
+# Step 2: Run the container with AWS credentials
+docker run -d -p 9000:8080 \
+  --name lambda-test \
+  -e AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE \
+  -e AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
+  -e AWS_REGION=us-east-1 \
+  command-center-lambda
+
+# Step 3: Test the function
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/StatusChecker/StatusChecker.json"
+
+# Step 4: View container logs
+docker logs lambda-test
+
+# Step 5: Stop and remove the container
+docker stop lambda-test
+docker rm lambda-test
+```
+
+### 6. Environment Variables Reference
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `AWS_ACCESS_KEY_ID` | No* | - | AWS access key for authentication |
+| `AWS_SECRET_ACCESS_KEY` | No* | - | AWS secret key for authentication |
+| `AWS_SESSION_TOKEN` | No | - | AWS session token (for temporary credentials) |
+| `AWS_REGION` | No | us-east-1 | AWS region for service calls |
+| `AWS_DEFAULT_REGION` | No | us-east-1 | Default AWS region |
+
+*Required only if your Lambda function interacts with AWS services
 
 ## 🔮 Future Plans
 
