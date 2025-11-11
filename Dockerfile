@@ -1,25 +1,28 @@
 FROM public.ecr.aws/lambda/python:3.11
 
-COPY requirements.txt .
+# Install dependencies
+COPY src/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install -r requirements.txt
+# copy scripts and give access
+COPY scripts/test_runner.sh scripts/lambda_entry.sh /
+RUN chmod +x /test_runner.sh /lambda_entry.sh
 
-COPY scripts/entry.sh /entry.sh
-
+# Copy application code (most frequent changes)
 COPY src/ ${LAMBDA_TASK_ROOT}/
 
-RUN chmod +x /entry.sh 
+# Run tests
+RUN /test_runner.sh
 
-ARG lambda_handler_env
+# Build arguments and labels
+ARG build=local-dev
+LABEL build=$build \
+      image="command-center-lambda"
 
-ARG build
+# Environment configuration
+ENV PYTHONPATH="${PYTHONPATH}:${LAMBDA_TASK_ROOT}" \
+    lambda_handler="lambda_handler.lambda_handler" \
+    AWS_REGION="us-east-1" \
+    AWS_DEFAULT_REGION="us-east-1"
 
-LABEL build=$build\
-      image="lambda-core"
-
-
-ENV PYTHONPATH="${PYTHONPATH}:${LAMBDA_TASK_ROOT}"
-
-ENV lambda_handler=$lambda_handler_env
-
-ENTRYPOINT /entry.sh $lambda_handler 
+ENTRYPOINT ["/lambda_entry.sh"]
