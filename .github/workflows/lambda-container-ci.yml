@@ -17,6 +17,8 @@ on:
 
 jobs:
   detect-changes:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       lambda_dirs: ${{ steps.find-lambdas.outputs.lambda_dirs }}
@@ -49,6 +51,8 @@ jobs:
           echo "lambda_dirs=$LAMBDA_DIRS" >> "$GITHUB_OUTPUT"
 
   test-lambda:
+    permissions:
+      contents: read
     needs: detect-changes
     runs-on: ubuntu-latest
     if: ${{ needs.detect-changes.outputs.lambda_dirs != '[]' && needs.detect-changes.outputs.lambda_dirs != '' }}

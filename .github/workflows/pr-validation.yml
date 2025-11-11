@@ -13,6 +13,9 @@ on:
 jobs:
   pr-title-check:
     name: Check PR Title
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     continue-on-error: true
@@ -31,6 +34,9 @@ jobs:
 
   pr-description-check:
     name: Check PR Description
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     needs: pr-title-check
@@ -50,6 +56,9 @@ jobs:
 
   pr-labels-check:
     name: Check PR Labels
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     needs: pr-description-check

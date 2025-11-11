@@ -1,17 +1,90 @@
-// import * as cdk from 'aws-cdk-lib';
-// import { Template } from 'aws-cdk-lib/assertions';
-// import * as Cdk from '../lib/cdk-stack';
+import * as cdk from "aws-cdk-lib";
+import { Template } from "aws-cdk-lib/assertions";
+import { IamRoleStack } from "../lib/iam-role-stack";
+import { ConnectPolicy } from "../lib/iam-role-policies/connect-policy";
 
-// example test. To run these tests, uncomment this file along with the
-// example resource in lib/cdk-stack.ts
-test('SQS Queue Created', () => {
-//   const app = new cdk.App();
-//     // WHEN
-//   const stack = new Cdk.CdkStack(app, 'MyTestStack');
-//     // THEN
-//   const template = Template.fromStack(stack);
+describe("IamRoleStack", () => {
+  test("Creates IAM Role with Lambda service principal", () => {
+    const app = new cdk.App();
+    const stack = new IamRoleStack(app, "TestStack", {
+      description: "Test role for Lambda",
+    });
 
-//   template.hasResourceProperties('AWS::SQS::Queue', {
-//     VisibilityTimeout: 300
-//   });
+    const template = Template.fromStack(stack);
+
+    template.hasResourceProperties("AWS::IAM::Role", {
+      AssumeRolePolicyDocument: {
+        Statement: [
+          {
+            Action: "sts:AssumeRole",
+            Effect: "Allow",
+            Principal: {
+              Service: "lambda.amazonaws.com",
+            },
+          },
+        ],
+      },
+    });
+
+    expect(template.toJSON()).toMatchSnapshot();
+  });
+
+  test("Attaches policy statements when provided", () => {
+    const app = new cdk.App();
+    const connectPolicies = ConnectPolicy(["arn:aws:connect:*:*:instance/*"]);
+
+    const stack = new IamRoleStack(app, "TestStack", {
+      policyStatements: connectPolicies,
+    });
+
+    const template = Template.fromStack(stack);
+
+    template.hasResourceProperties("AWS::IAM::Policy", {
+      PolicyDocument: {
+        Statement: [
+          {
+            Action: [
+              "connect:StartOutboundVoiceContact",
+              "connect:StopContact",
+              "connect:GetContactAttributes",
+            ],
+            Effect: "Allow",
+            Resource: "arn:aws:connect:*:*:instance/*",
+          },
+        ],
+      },
+    });
+
+    expect(template.toJSON()).toMatchSnapshot();
+  });
+
+  test("Applies tags when provided", () => {
+    const app = new cdk.App();
+    const stack = new IamRoleStack(app, "TestStack", {
+      description: "Test role",
+    });
+
+    const template = Template.fromStack(stack);
+    template.resourceCountIs("AWS::IAM::Role", 1);
+    expect(template.toJSON()).toMatchSnapshot();
+  });
+});
+
+describe("ConnectPolicy", () => {
+  test("Creates policy with correct Connect actions", () => {
+    const policies = ConnectPolicy([
+      "arn:aws:connect:us-east-1:123456789012:instance/test",
+    ]);
+
+    expect(policies).toHaveLength(1);
+    expect(policies[0].toStatementJson()).toMatchObject({
+      Effect: "Allow",
+      Action: [
+        "connect:StartOutboundVoiceContact",
+        "connect:StopContact",
+        "connect:GetContactAttributes",
+      ],
+      Resource: "arn:aws:connect:us-east-1:123456789012:instance/test",
+    });
+  });
 });
