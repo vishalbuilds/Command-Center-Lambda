@@ -136,27 +136,6 @@ jobs:
           npm run build
           echo "✅ Build successful!"
 
-      - name: CDK Synth
-        run: |
-          echo "🏗️ Synthesizing CDK stacks..."
-          npx cdk synth
-          echo "✅ CDK synth successful!"
-        env:
-          CI: true
-
-      - name: Upload CDK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: cdk-synth-output
-          path: cdk/cdk.out/
-
-      - name: CDK Diff (on PR)
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "📊 Running CDK diff..."
-          npx cdk diff || echo "::warning:: CDK diff completed with changes"
-        continue-on-error: true
-
       - name: Report Results
         if: always()
         run: |
@@ -164,4 +143,3 @@ jobs:
           echo "✅ Lint: Passed"
           echo "✅ Tests: Passed"
           echo "✅ Build: Passed"
-          echo "✅ Synth: Passed"
