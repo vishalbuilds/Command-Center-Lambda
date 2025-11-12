@@ -66,3 +66,25 @@ class TestTraceId:
         assert first_id == "first-id"
         assert second_id == "second-id"
         assert first_id != second_id
+    
+    def test_init_with_lambda_context_object(self):
+        """Test TraceId initialization with Lambda context object (not dict)."""
+        # Mock a Lambda context object
+        context = MagicMock()
+        context.aws_request_id = "lambda-context-request-id"
+        
+        TraceId.init(context)
+        
+        assert TraceId.get() == "lambda-context-request-id"
+    
+    def test_init_with_lambda_context_object_no_request_id(self):
+        """Test TraceId initialization with Lambda context object without request ID."""
+        # Mock a Lambda context object without aws_request_id attribute
+        context = MagicMock(spec=[])  # Empty spec means no attributes
+        
+        TraceId.init(context)
+        
+        trace_id = TraceId.get()
+        assert trace_id is not None
+        assert len(trace_id) > 0
+        assert "-" in trace_id
