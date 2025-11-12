@@ -2,16 +2,9 @@ name: CDK CI
 
 on:
   push:
-    branches: [main]
-    paths:
-      - "cdk/**"
-      - ".github/workflows/cdk-ci.yml"
+    branches: [main, master]
   pull_request:
-    branches: [main]
-    paths:
-      - "cdk/**"
-      - ".github/workflows/cdk-ci.yml"
-  workflow_dispatch:
+    branches: [main, master]
 
 jobs:
   lint:
