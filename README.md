@@ -172,9 +172,9 @@ The `Dockerfile` uses a build argument to track build metadata.
 
 #### Build Arguments
 
-| Argument | Required | Default | Description | Example |
-|----------|----------|---------|-------------|---------|
-| `build` | No | `local-dev` | Build identifier/tag for tracking | `local`, `v1.0.0`, `prod-123` |
+| Argument | Required | Default     | Description                       | Example                       |
+| -------- | -------- | ----------- | --------------------------------- | ----------------------------- |
+| `build`  | No       | `local-dev` | Build identifier/tag for tracking | `local`, `v1.0.0`, `prod-123` |
 
 #### Build Commands
 
@@ -269,14 +269,11 @@ Use `curl` or any API client to send a POST request to the local endpoint, mimic
 #### Test with Local File
 
 ```bash
-# Test StatusChecker function
-curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/StatusChecker/StatusChecker.json"
+# Test Amazon Connect status checker workflow
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/amazon_connect_workflow/status_checker_connect_event_pass.json"
 
-# Test Amazon Connect workflow
-curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/amazon_connect_workflow/pass_scenario.json"
-
-# Test S3 workflow
-curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/s3/s3_event.json"
+# Test S3  status checker workflow
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/s3_workflow/status_checker_s3_event_pass.json"
 ```
 
 #### Test with Inline JSON
@@ -288,7 +285,7 @@ curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{"key
 #### Test with Pretty Output
 
 ```bash
-curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/StatusChecker/StatusChecker.json" | python -m json.tool
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/amazon_connect_workflow/status_checker_connect_event_pass.json" | python -m json.tool
 ```
 
 ### 5. Complete Local Testing Workflow
@@ -320,15 +317,15 @@ docker rm lambda-test
 
 ### 6. Environment Variables Reference
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `AWS_ACCESS_KEY_ID` | No* | - | AWS access key for authentication |
-| `AWS_SECRET_ACCESS_KEY` | No* | - | AWS secret key for authentication |
-| `AWS_SESSION_TOKEN` | No | - | AWS session token (for temporary credentials) |
-| `AWS_REGION` | No | us-east-1 | AWS region for service calls |
-| `AWS_DEFAULT_REGION` | No | us-east-1 | Default AWS region |
+| Variable                | Required | Default   | Description                                   |
+| ----------------------- | -------- | --------- | --------------------------------------------- |
+| `AWS_ACCESS_KEY_ID`     | No\*     | -         | AWS access key for authentication             |
+| `AWS_SECRET_ACCESS_KEY` | No\*     | -         | AWS secret key for authentication             |
+| `AWS_SESSION_TOKEN`     | No       | -         | AWS session token (for temporary credentials) |
+| `AWS_REGION`            | No       | us-east-1 | AWS region for service calls                  |
+| `AWS_DEFAULT_REGION`    | No       | us-east-1 | Default AWS region                            |
 
-*Required only if your Lambda function interacts with AWS services
+\*Required only if your Lambda function interacts with AWS services
 
 ## 🔮 Future Plans
 
