@@ -6,9 +6,6 @@
 ![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
 [![TypeScript Version](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 ![Last Commit](https://img.shields.io/github/last-commit/vishalbuilds/CommandCenterLambda)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vishalbuilds/Command-Center-Lambda/.github%2Fworkflows%2Fcdk-ci.yml?label=cdk%20ci)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vishalbuilds/Command-Center-Lambda/.github%2Fworkflows%2Fpr-validation-ci.yml?label=pr%20validation)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/vishalbuilds/Command-Center-Lambda/.github%2Fworkflows%2Fpython-ci.yml?label=python%20ci)
 
 # CommandCenter Lambda
 
