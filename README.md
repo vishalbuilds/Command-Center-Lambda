@@ -2,7 +2,7 @@
 ![Python build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/python-ci.yml/badge.svg)
 ![PR validation](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/pr-validation-ci.yml/badge.svg)
 ![Code Coverage](https://codecov.io/gh/vishalbuilds/Command-Center-Lambda/branch/main/graph/badge.svg)
-![License](https://img.shields.io/github/license/vishalbuilds/CommandCenterLambda)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
 [![TypeScript Version](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 ![Last Commit](https://img.shields.io/github/last-commit/vishalbuilds/CommandCenterLambda)
@@ -49,8 +49,6 @@ CommandCenterLambda/
 │   ├── cdk.json                # CDK configuration
 │   ├── package.json            # Node.js dependencies
 │   └── README.md               # CDK-specific documentation
-├── scripts/
-│   └── entry.sh                # Container entry script
 ├── src/                        # Source code for Lambda functions and utilities
 │   ├── common/                 # Shared utilities and models
 │   │   ├── client_record/
@@ -301,8 +299,8 @@ docker run -d -p 9000:8080 \
   -e AWS_REGION=us-east-1 \
   command-center-lambda
 
-# Step 3: Test the function
-curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/StatusChecker/StatusChecker.json"
+# Step 3: Test the function with amazon connect contact flow event
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/amazon_connect_workflow/status_checker_connect_event_pass.json"
 
 # Step 4: View container logs
 docker logs lambda-test
