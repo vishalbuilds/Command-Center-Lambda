@@ -104,6 +104,12 @@ jobs:
             exit 1
           fi
           
+          # Check if response contains any error keywords
+          if echo "$body" | grep -qiE '"error"|"errorType"|"errorMessage"'; then
+            echo "❌ Test failed: Response contains error"
+            exit 1
+          fi
+          
           echo "✅ All tests passed!"
           echo "$body" | jq '.' || echo "$body"
 
