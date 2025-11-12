@@ -40,9 +40,9 @@ CommandCenterLambda/
 │   │   └── cdk.ts              # CDK App entry point
 │   ├── lib/
 │   │   ├── iam-role-policies/  # iam role policy defination
-|   |   │   ├── connect-policy.ts
-|   |   |   ├── s3-policy.ts
-|   |   |   └── dynamodb-policy.ts
+│   │   │   ├── connect-policy.ts
+│   │   │   ├── s3-policy.ts
+│   │   │   └── dynamodb-policy.ts
 │   │   ├── iam-role-stack.ts   # iam role stack
 │   │   └── lambda-stack.ts     # lambda stack
 │   ├── test/                   # CDK tests
@@ -71,8 +71,8 @@ CommandCenterLambda/
 │   │   ├── conftest.py
 │   │   └── test_lambda_handler.py
 │   ├── lambda_handler.py       # Main Lambda handler entry point
-|   ├── requirements.txt        # Python production dependencies
-|   └── requirements.dev.txt    # Python python development dependencies
+│   ├── requirements.txt        # Python production dependencies
+│   └── requirements.dev.txt    # Python python development dependencies
 ├── .gitignore
 ├── Dockerfile                  # Dockerfile for building the Lambda container image
 ├── LICENSE                     # MIT License

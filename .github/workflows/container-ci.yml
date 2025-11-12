@@ -1,0 +1,133 @@
+name: Docker CI
+
+on:
+  push:
+    branches: [ main, develop ]
+
+  pull_request:
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t test-image:latest .
+
+      - name: Save Docker image
+        run: |
+          docker save test-image:latest -o /tmp/test-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/test-image.tar
+          retention-days: 1
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: |
+          docker load -i /tmp/test-image.tar
+
+      - name: Run Docker container
+        run: |
+          docker run -d \
+            --name test-container \
+            -p 9000:8080 \
+            test-image:latest
+          
+          # Wait for container to be ready
+          echo "Waiting for container to be ready..."
+          sleep 10
+          
+          # Check if container is running
+          docker ps -a
+
+      - name: Test Lambda function
+        id: test
+        run: |
+          echo "Testing Lambda function..."
+          
+          # Make the curl request and capture response
+          response=$(curl -s -w "\n%{http_code}" \
+            "http://localhost:9000/2015-03-31/functions/function/invocations" \
+            -d @"src/test_data/amazon_connect_workflow/status_checker_connect_event_pass.json")
+          
+          # Split response body and HTTP code
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "HTTP Code: $http_code"
+          echo "Response Body: $body"
+          
+          # Check HTTP code
+          if [ "$http_code" != "200" ]; then
+            echo "❌ Test failed: HTTP code is $http_code, expected 200"
+            exit 1
+          fi
+          
+          # Check if response contains statusCode: 200
+          if ! echo "$body" | grep -q '"statusCode": 200'; then
+            echo "❌ Test failed: Response does not contain statusCode: 200"
+            exit 1
+          fi
+          
+          # Check if response contains result: success
+          if ! echo "$body" | grep -q '"result": "success"'; then
+            echo "❌ Test failed: Response does not contain result: success"
+            exit 1
+          fi
+          
+          # Check if response contains any error keywords
+          if echo "$body" | grep -qiE '"error"|"errorType"|"errorMessage"'; then
+            echo "❌ Test failed: Response contains error"
+            exit 1
+          fi
+          
+          echo "✅ All tests passed!"
+          echo "$body" | jq '.' || echo "$body"
+
+      - name: Show container logs on failure
+        if: failure()
+        run: |
+          echo "Container logs:"
+          docker logs test-container
+
+      - name: Stop and remove container
+        if: always()
+        run: |
+          docker stop test-container || true
+          docker rm test-container || true
+
+      - name: Test Summary
+        if: success()
+        run: |
+          echo "### ✅ All Tests Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Lambda function responded correctly with statusCode 200 and result: success" >> $GITHUB_STEP_SUMMARY
