@@ -28,9 +28,7 @@ LABEL build=$build \
 #       echo "RIE launch successfully"
 
 # Environment configuration
-ENV PYTHONPATH="${PYTHONPATH}:${LAMBDA_TASK_ROOT}" \
-    AWS_REGION="us-east-1" \
-    AWS_DEFAULT_REGION="us-east-1"
+ENV PYTHONPATH="${LAMBDA_TASK_ROOT}" 
 
 # Default CMD for Lambda runtime 
 CMD ["lambda_handler.lambda_handler"]

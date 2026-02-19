@@ -1,11 +1,14 @@
 ![CDK build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/cdk-ci.yml/badge.svg)
 ![Python build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/python-ci.yml/badge.svg)
+![Conatainer build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/container-ci.yml/badge.svg)
 ![PR validation](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/pr-validation-ci.yml/badge.svg)
 ![Code Coverage](https://codecov.io/gh/vishalbuilds/Command-Center-Lambda/branch/main/graph/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)
 [![TypeScript Version](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
 ![Last Commit](https://img.shields.io/github/last-commit/vishalbuilds/CommandCenterLambda)
+![GitHub repo size](https://img.shields.io/github/repo-size/vishalbuilds/Command-Center-Lambda)
+![GitHub Tag](https://img.shields.io/github/v/tag/vishalbuilds/Command-Center-Lambda)
 
 # CommandCenter Lambda
 
