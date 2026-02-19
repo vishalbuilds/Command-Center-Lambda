@@ -1,4 +1,4 @@
-name: CDK CI
+name: Conatainer CI
 
 on:
   push:
