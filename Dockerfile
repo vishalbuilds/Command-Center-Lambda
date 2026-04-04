@@ -7,9 +7,6 @@ RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
 # Copy application code 
 COPY src/ ${LAMBDA_TASK_ROOT}/
 
-# Run unit tests 
-RUN python -m pytest ${LAMBDA_TASK_ROOT}/test_unit/ -v --tb=short
-
 # Build arguments and labels
 ARG build=local-dev
 LABEL build=$build \

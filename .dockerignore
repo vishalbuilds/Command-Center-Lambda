@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+test*
+docs/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git
+.env
+tests/
+docs/
+.coverage
