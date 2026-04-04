@@ -9,9 +9,10 @@ All methods include logging and error handling for robust production use.
 """
 
 from common.client_record.connect_client import connect_client
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 
-logger = Logger(__name__)
+
+logger = Logger()
 
 
 class ConnectUtils:
@@ -38,7 +39,7 @@ class ConnectUtils:
         try:
             return self.connect_client.get_paginator(service)
         except Exception as e:
-            logger.error(f"Error in getting paginator: {e}")
+            logger.exception(f"Error in getting paginator: {e}")
             raise
 
     def list_contact_flow(self):
@@ -57,9 +58,7 @@ class ConnectUtils:
         """
         try:
             logger.info(f"Listing all contact flow from region:{self.region_name}")
-            response_paginator = self._get_paginator(
-                "list_contact_flows"
-            ).paginate(
+            response_paginator = self._get_paginator("list_contact_flows").paginate(
                 InstanceId=self.instanceId,
             )
             return [
@@ -68,7 +67,7 @@ class ConnectUtils:
                 for contact_flow in response.get("ContactFlowSummaryList", [])
             ]
         except Exception as e:
-            logger.error(f"Error in listing contact flows: {e}")
+            logger.exception(f"Error in listing contact flows: {e}")
             raise
 
     def list_routing_profile(self):
@@ -84,9 +83,7 @@ class ConnectUtils:
         """
         try:
             logger.info(f"Listing all routing profile from region:{self.region_name}")
-            response_paginator = self._get_paginator(
-                "list_routing_profiles"
-            ).paginate(
+            response_paginator = self._get_paginator("list_routing_profiles").paginate(
                 InstanceId=self.instanceId,
             )
             return [
@@ -95,7 +92,7 @@ class ConnectUtils:
                 for routing_profile in response.get("RoutingProfileSummaryList", [])
             ]
         except Exception as e:
-            logger.error(f"Error in listing routing profiles: {e}")
+            logger.exception(f"Error in listing routing profiles")
             raise
 
     def list_queues(self):
@@ -116,9 +113,7 @@ class ConnectUtils:
         """
         try:
             logger.info(f"Listing all queue from region:{self.region_name}")
-            response_paginator = self._get_paginator(
-                "list_queues"
-            ).paginate(
+            response_paginator = self._get_paginator("list_queues").paginate(
                 InstanceId=self.instanceId,
             )
             return [
@@ -127,7 +122,7 @@ class ConnectUtils:
                 for queue in response.get("QueueSummaryList", [])
             ]
         except Exception as e:
-            logger.error(f"Error in listing queues: {e}")
+            logger.exception(f"Error in listing queues")
             raise
 
     def describe_contact(self, contactId: str):
@@ -153,7 +148,10 @@ class ConnectUtils:
                 instanceId=self.instanceId, ContactId=contactId
             )
         except Exception as e:
-            logger.error(f"Error in describing contact id {contactId}: {e}")
+            logger.exception(
+                f"Error in describing contact id",
+                extra={"contactId": contactId},
+            )
             raise
 
     def start_outbound_voice_contact(
@@ -189,7 +187,16 @@ class ConnectUtils:
                     "add either queue name or source phone number or contact flow id"
                 )
             logger.info(
-                f"Inititing outbound voice contact all queue from region:{self.region_name},DestinationPhoneNumber:{DestinationPhoneNumber}"
+                f"Inititing outbound voice contact all queue from region:{self.region_name}",
+                extra={
+                    "name": name,
+                    "DestinationPhoneNumber": DestinationPhoneNumber,
+                    "ContactFlowId": ContactFlowId,
+                    "SourcePhoneNumber": (
+                        SourcePhoneNumber if SourcePhoneNumber else None
+                    ),
+                    "QueueId": (QueueId if QueueId else None),
+                },
             )
             return self.connect_client.start_outbound_voice_contact(
                 name=name,
@@ -200,8 +207,17 @@ class ConnectUtils:
                 QueueId=QueueId,
             )
         except Exception as e:
-            logger.error(
-                f"Error in start outbound voice contact with DestinationPhoneNumber{DestinationPhoneNumber} : {e}"
+            logger.exception(
+                f"Error in start outbound voice contact",
+                extra={
+                    "name": name,
+                    "DestinationPhoneNumber": DestinationPhoneNumber,
+                    "ContactFlowId": ContactFlowId,
+                    "SourcePhoneNumber": (
+                        SourcePhoneNumber if SourcePhoneNumber else None
+                    ),
+                    "QueueId": (QueueId if QueueId else None),
+                },
             )
             raise
 
@@ -221,16 +237,16 @@ class ConnectUtils:
                 logged before re-raising.
         """
         try:
-            logger.info(
-                f"Disconnecting contact id {contactId} from region:{self.region_name}"
-            )
+            logger.info("Disconnecting contact id", extra={"contactId": contactId})
             self.connect_client.stop_contact(
                 instanceId=self.instanceId,
                 ContactId=contactId,
                 DisconnectReason={"Code": "OTHERS"},
             )
         except Exception as e:
-            logger.error(f"Error in disconnecting contactId{contactId}: {e}")
+            logger.exception(
+                "Error in disconnecting contactId", extra={"contactId": contactId}
+            )
             raise
 
     def tag_contact(self, contactId: str, tags: dict):
@@ -250,12 +266,18 @@ class ConnectUtils:
                 logged before re-raising.
         """
         try:
-            logger.info(f"tag contact id {contactId} from region:{self.region_name}")
+            logger.info(
+                f"tag contact id {contactId}",
+                extra={**tags, "contactId": contactId},
+            )
             self.connect_client.tag_contact(
                 instanceId=self.instanceId, ContactId=contactId, Tags=tags
             )
         except Exception as e:
-            logger.error(f"Error in tagging contactId{contactId}: {e}")
+            logger.error(
+                "Error in tagging contactId",
+                extra={**tags, "contactId": contactId},
+            )
             raise
 
     def get_current_user_data(self, filters: dict[str, list[str]]):
@@ -268,10 +290,10 @@ class ConnectUtils:
             A dictionary containing the current user data from the Amazon Connect API.
         """
         try:
-            logger.info(f"Getting current user data from region:{self.region_name}")
+            logger.info(f"Getting current user data", extra=filters)
             return self.connect_client.get_current_user_data(
                 instanceId=self.instanceId, Filters=filters
             )
         except Exception as e:
-            logger.error(f"Error in getting current user data: {e}")
+            logger.error(f"Error in getting current user data", extra=filters)
             raise

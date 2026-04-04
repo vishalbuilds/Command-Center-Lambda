@@ -1,6 +1,8 @@
 import re
 from typing import Any, Dict
+from aws_lambda_powertools import Logger
 
+LOGGER = Logger()
 
 SENSITIVE_KEYS = {
     "password",
@@ -36,18 +38,20 @@ SENSITIVE_PATTERNS = {
 
 class EventSanitizer:
 
-    def __init__(self, event: Dict = None, mask_text: str = None):
-        self.custom_mask_text = mask_text
-        self.sanitized_data = self._sanitize_dict(event)
+    def __init__(self, event: Dict = None):
+        self.event = event
+        self.custom_mask_text = ""
 
     def _mask_value(self, value: Any, key_name: str) -> Any:
         if not isinstance(value, str):
-            return value
+            return (
+                self.custom_mask_text if self.custom_mask_text else f"***{key_name}***"
+            )
         if self.custom_mask_text:
             return self.custom_mask_text
         return f"***{key_name}***"
 
-    def _sanitize_value(self, value: Any, key_name: str = None) -> Any:
+    def _sanitize_value(self, value: Any) -> Any:
         if isinstance(value, str):
             sanitized_value = value
             for name, pattern in SENSITIVE_PATTERNS.items():
@@ -84,4 +88,12 @@ class EventSanitizer:
         return sanitized
 
     def get_sanitized_data(self) -> Dict:
-        return self.sanitized_data
+        if self.event.get("isSanitizationEnabled", False):
+            LOGGER.info(
+                "Sanitisation is enabled", extra={"maskText": self.custom_mask_text}
+            )
+            self.custom_mask_text = self.event.get("maskText", "")
+            return self._sanitize_dict(self.event)
+        else:
+            LOGGER.info("Sanitisation is disabled")
+            return self.event

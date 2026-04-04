@@ -14,7 +14,9 @@
       "envVar": {
         "NAME": "Command-Center-Lambda",
         "DYNAMODB_TABLE_QUEUE_OBJECT": "queue-object-table-infraVersion-1-us-east-1",
-        "CONNECT_INSTANCE_ID": "arn:aws:connect:us-east-1:123456789012:instance/abc-123"
+        "CONNECT_INSTANCE_ID": "arn:aws:connect:us-east-1:123456789012:instance/abc-123",
+        "POWERTOOLS_SERVICE_NAME": "Command-Center-Lambda",
+        "POWERTOOLS_LOG_LEVEL": "INFO"
       },
       "us-east-1": {
         "lambda": {

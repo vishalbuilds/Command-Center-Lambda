@@ -1,9 +1,9 @@
 import phonenumbers
 from phonenumbers import ValidationResult
 from common.models.default_strategy import DefaultStrategy
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 
-LOGGER = Logger(__name__)
+logger = Logger()
 
 PLUS_SIGN = "+"
 
@@ -15,7 +15,7 @@ class PhoneNumberFormat(DefaultStrategy):
 
     def do_validate(self):
         if not self.phone_number:
-            LOGGER.error("Phone number is required in event")
+            logger.error("Phone number is required in event")
             return False, "Phone number is required in event"
         else:
             return True, None
@@ -59,6 +59,9 @@ class PhoneNumberFormat(DefaultStrategy):
                     ),
                 }
         except phonenumbers.NumberParseException as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"Error in processing phone number format request: {e}")
+            logger.info(
+                "Error in processing phone number format request",
+                extra={"error": str(e)},
+            )
+            logger.exception(f"Error in processing phone number format request: {e}")
             return {"validationResult": "Error", "failedReason": str(e)}

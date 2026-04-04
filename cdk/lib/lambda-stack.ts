@@ -11,7 +11,7 @@ interface LambdaStackProps extends cdk.StackProps {
   readonly lambdaIamRole: iam.IRole;
   readonly vpcId?: string;
   readonly subnets?: string[];
-  readonly tags: { [key: string]: string };
+  readonly environmentVariables: { [key: string]: string };
   readonly functionName?: string;
   readonly description?: string;
 }
@@ -30,7 +30,7 @@ export class LambdaStack extends cdk.Stack {
       props.subnets && vpc
         ? {
             subnets: props.subnets.map((subnetId, index) =>
-              ec2.Subnet.fromSubnetId(this, `Subnet${index}`, subnetId)
+              ec2.Subnet.fromSubnetId(this, `Subnet${index}`, subnetId),
             ),
           }
         : undefined;
@@ -38,7 +38,7 @@ export class LambdaStack extends cdk.Stack {
     const ecrRepository = ecr.Repository.fromRepositoryArn(
       this,
       "EcrRepository-CommandCenterLambda",
-      props.ecrRepositoryArn
+      props.ecrRepositoryArn,
     );
 
     this.lambdaFunction = new lambda.DockerImageFunction(
@@ -56,9 +56,9 @@ export class LambdaStack extends cdk.Stack {
         vpcSubnets,
         timeout: cdk.Duration.minutes(5),
         environment: {
-          env: JSON.stringify(props.tags),
+          ...props.environmentVariables,
         },
-      }
+      },
     );
     ecrRepository.grantPull(props.lambdaIamRole);
   }

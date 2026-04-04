@@ -1,7 +1,8 @@
 import boto3
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 
-logger = Logger(__name__)
+
+logger = Logger()
 
 
 def s3_client():

@@ -5,10 +5,11 @@ This class provides high-level, descriptive methods for starting, getting, and c
 All methods include logging and error handling for robust production use.
 """
 
+from aws_lambda_powertools import Logger
 from common.client_record.transcribe_client import transcribe_client
-from common.models.logger import Logger
 
-logger = Logger(__name__)
+
+logger = Logger()
 
 
 class TranscribeUtils:
@@ -27,16 +28,25 @@ class TranscribeUtils:
         Raises:
             Exception: If the operation fails.
         """
-        logger.info(f"Checking transcription job status for: {transcription_job_name}")
+        logger.info(
+            f"Checking transcription job status for: {transcription_job_name}",
+            extra={"transcription_job_name": transcription_job_name},
+        )
         try:
             while True:
                 response = self.transcribe_client.get_transcription_job(
                     transcription_job_name
                 )
                 status = response["TranscriptionJob"]["TranscriptionJobStatus"]
-                logger.info(f"Transcription job status: {status}")
+
+                logger.info(
+                    f"Transcription job status: {status}", extra={"status": status}
+                )
                 if status == "COMPLETED":
-                    logger.info(f"Transcription job completed with status: {status}")
+                    logger.info(
+                        f"Transcription job completed with status: {status}",
+                        extra={"status": status},
+                    )
                     return status
                 elif status == "IN_PROGRESS":
                     logger.info("Transcription job in progress...")
@@ -44,11 +54,19 @@ class TranscribeUtils:
 
                     time.sleep(5)
                 elif status == "FAILED":
-                    logger.error(f"Transcription job failed: {status}")
+                    logger.error(
+                        f"Transcription job failed: {status}", extra={"status": status}
+                    )
                     return status
                 else:
-                    logger.error(f"Transcription job status not found: {response}")
+                    logger.error(
+                        f"Transcription job status not found: {response}",
+                        extra={"response": response},
+                    )
                     return "UNKNOWN"
         except Exception as e:
-            logger.error(f"Error checking transcription job status: {e}")
+            logger.exception(
+                f"Error checking transcription job status: {e}",
+                extra={"transcription_job_name": transcription_job_name},
+            )
             raise

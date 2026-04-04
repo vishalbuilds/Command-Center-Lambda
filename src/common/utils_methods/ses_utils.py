@@ -8,12 +8,12 @@ validating email addresses, and formatting email content.
 All methods include logging and error handling for robust production use.
 """
 
+from aws_lambda_powertools import Logger
 from typing import List, Optional, Dict, Any
 from common.client_record.ses_client import ses_client
-from common.models.logger import Logger
 import re
 
-logger = Logger(__name__)
+logger = Logger()
 
 
 class SESUtils:
@@ -118,12 +118,16 @@ class SESUtils:
             )
 
             logger.info(
-                f"Sending email to {_to_email} with cc: {_cc_email} and bcc: {_bcc_email}"
+                "Sending email",
+                extra={
+                    "from_email": _from_email,
+                    "to_email": _to_email,
+                    "cc_email": _cc_email,
+                    "bcc_email": _bcc_email,
+                    "subject": subject,
+                    "body_html": body_html,
+                },
             )
-            logger.info(f"Email subject: {subject}")
-            logger.debug(
-                f"Email body: {body_html[:100]}..."
-            )  # Log only first 100 chars
 
             response = self.ses_client.send_email(
                 FromEmailAddress=_from_email,
@@ -141,13 +145,42 @@ class SESUtils:
             )
 
             logger.info(
-                f"Email sent successfully. MessageId: {response.get('MessageId')}"
+                "Email sent successfully",
+                extra={
+                    "MessageId": response.get("MessageId"),
+                    "from_email": _from_email,
+                    "to_email": _to_email,
+                    "cc_email": _cc_email,
+                    "bcc_email": _bcc_email,
+                    "subject": subject,
+                    "body_html": body_html,
+                },
             )
             return response
 
         except ValueError as ve:
-            logger.error(f"Email validation error: {ve}")
+            logger.exception(
+                f"Email validation error: {ve}",
+                extra={
+                    "from_email": _from_email,
+                    "to_email": _to_email,
+                    "cc_email": _cc_email,
+                    "bcc_email": _bcc_email,
+                    "subject": subject,
+                    "body_html": body_html,
+                },
+            )
             raise
         except Exception as e:
-            logger.error(f"Error sending email via SES: {e}")
+            logger.error(
+                f"Error sending email via SES: {e}",
+                extra={
+                    "from_email": _from_email,
+                    "to_email": _to_email,
+                    "cc_email": _cc_email,
+                    "bcc_email": _bcc_email,
+                    "subject": subject,
+                    "body_html": body_html,
+                },
+            )
             raise

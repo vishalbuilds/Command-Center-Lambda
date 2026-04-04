@@ -129,13 +129,17 @@ class TestDynamoDBUtils:
         assert "ExpressionAttributeNames" in call_args[1]
         assert "ExpressionAttributeValues" in call_args[1]
 
+    @patch("common.utils_methods.dynamodb_utils_resource.logger")
     @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
-    def test_put_item_success(self, mock_dynamodb_resource):
+    def test_put_item_success(self, mock_dynamodb_resource, mock_logger):
         """Test successful put_item operation."""
         mock_resource = MagicMock()
         mock_table = MagicMock()
         mock_resource.Table.return_value = mock_table
         mock_dynamodb_resource.return_value = mock_resource
+
+        # Patch logger.info to accept any kwargs (avoid KeyError on reserved keys)
+        mock_logger.info.side_effect = lambda *args, **kwargs: None
 
         utils = DynamoDBUtilsResource("us-east-1", "test-table")
         item = {"id": "test-id", "name": "test-name"}

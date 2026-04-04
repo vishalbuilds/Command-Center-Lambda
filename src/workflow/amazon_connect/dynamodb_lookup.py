@@ -5,10 +5,10 @@ from common.utils_methods.dynamodb_utils_resource import (
     KEY_VALUE,
 )
 from common.models.default_strategy import DefaultStrategy
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 import os
 
-LOGGER = Logger(__name__)
+logger = Logger()
 
 REGION = os.environ.get("REGION")
 
@@ -26,15 +26,15 @@ class DynamodbLookup(DefaultStrategy):
         error = []
 
         if not self.event.get("TABLE_NAME"):
-            LOGGER.error(f"Missing required parameter: TABLE_NAME")
+            logger.error(f"Missing required parameter: TABLE_NAME")
             error.append(f"Missing required parameter: TABLE_NAME")
 
         if not self.event.get("KEY_NAME"):
-            LOGGER.error(f"Missing required parameter: KEY_NAME")
+            logger.error(f"Missing required parameter: KEY_NAME")
             error.append(f"Missing required parameter: KEY_NAME")
 
         if not self.event.get("KEY_VALUE"):
-            LOGGER.error(f"Missing required parameter: KEY_VALUE")
+            logger.error(f"Missing required parameter: KEY_VALUE")
             error.append(f"Missing required parameter: KEY_VALUE")
 
         return (False, error) if error else (True, None)
@@ -49,11 +49,11 @@ class DynamodbLookup(DefaultStrategy):
                 key_name, key_value
             )
 
-            LOGGER.info(
+            logger.info(
                 f"Successfully found item value {item_attr} in table {table_name}"
             )
             return item_attr
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"DynamoDB lookup operation failed: {str(e)}")
+            logger.info("Error occurred in DynamoDB lookup", extra={"error": str(e)})
+            logger.exception(f"DynamoDB lookup operation failed: {str(e)}")
             raise

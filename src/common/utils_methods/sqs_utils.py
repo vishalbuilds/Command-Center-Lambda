@@ -8,11 +8,11 @@ deleting messages, and managing message attributes.
 All methods include logging and error handling for robust production use.
 """
 
+from aws_lambda_powertools import Logger
 from common.client_record.sqs_client import sqs_client
-from common.models.logger import Logger
 
-logger = Logger(__name__)
 
+logger = Logger()
 
 MAX_POLLING_ATTEMPTS = 10
 
@@ -53,18 +53,21 @@ class SQSUtils:
         Send a message to an Amazon SQS queue.
 
         Args:
-            queue: The queue URL that receives the message
             message: The body text of the message
-            region: AWS region name
             message_attr: Custom attributes of the message (key-value pairs)
 
         Returns:
             The response from SQS that contains the assigned message ID
         """
+        message_attributes = self._create_message_attributes(message_attr)
         try:
-            message_attributes = self._create_message_attributes(message_attr)
             logger.info(
-                f"Sending message to {self.queue_url} with body: {message} and attributes: {message_attributes}"
+                "Sending message to SQS",
+                extra={
+                    "queue_url": self.queue_url,
+                    "message": message,
+                    "message_attributes": message_attributes,
+                },
             )
 
             response = self.sqs_client.send_message(
@@ -73,12 +76,21 @@ class SQSUtils:
                 MessageAttributes=message_attributes,
             )
 
-            message_id = response.get("MessageId", "unknown")
-            logger.info(f"Sent message with id {message_id}")
+            logger.info(
+                "Message sent successfully",
+                extra={"message_id": response.get("MessageId", "unknown")},
+            )
             return response
 
-        except Exception as e:
-            logger.error(f"Error sending message to SQS: {e}")
+        except Exception:
+            logger.exception(
+                "Error sending message to SQS",
+                extra={
+                    "queue_url": self.queue_url,
+                    "message": message,
+                    "message_attributes": message_attributes,
+                },
+            )
             raise
 
     def receive_message(
@@ -94,9 +106,7 @@ class SQSUtils:
         Receive a specific message by its custom message attributes.
 
         Args:
-            queue: SQS queue URL
             message_ids: Dictionary of message attribute keys and values to match
-            region_name: AWS region name
             max_messages: Maximum messages to retrieve per request (1-10)
             visibility_timeout: How long the message stays invisible after retrieval (seconds)
             wait_time: Long polling wait time in seconds (0-20)
@@ -106,10 +116,10 @@ class SQSUtils:
         Returns:
             The matching message or None if not found
         """
-        try:
-            polling_attempt = 0
-            checked_receipt_handles = set()
+        polling_attempt = 0
+        checked_receipt_handles = set()
 
+        try:
             while polling_attempt < max_polling_attempts:
                 response = self.sqs_client.receive_message(
                     QueueUrl=self.queue_url,
@@ -123,7 +133,11 @@ class SQSUtils:
 
                 if "Messages" not in response:
                     logger.info(
-                        f"No messages found in queue (attempt {polling_attempt + 1}/{max_polling_attempts})"
+                        "No messages found in queue",
+                        extra={
+                            "attempt": polling_attempt + 1,
+                            "max_attempts": max_polling_attempts,
+                        },
                     )
                     polling_attempt += 1
                     continue
@@ -131,52 +145,76 @@ class SQSUtils:
                 for message in response["Messages"]:
                     receipt_handle = message["ReceiptHandle"]
 
-                    # Skip already-checked messages
                     if receipt_handle in checked_receipt_handles:
-                        logger.debug(
-                            f"Skipping already-checked message with receipt handle: {receipt_handle}"
+                        logger.info(
+                            "Skipping already-checked message",
+                            extra={"receipt_handle": receipt_handle},
                         )
                         continue
 
                     checked_receipt_handles.add(receipt_handle)
 
-                    # Check if message attributes match
                     message_attr = message.get("MessageAttributes", {})
-                    if all(
+                    is_match = all(
                         key in message_attr
                         and message_attr[key].get("StringValue") == value
                         for key, value in message_ids.items()
-                    ):
+                    )
+
+                    if is_match:
                         logger.info(
-                            f"Found matching message for attributes {message_ids}"
+                            "Found matching message",
+                            extra={
+                                "message_ids": message_ids,
+                                "receipt_handle": receipt_handle,
+                            },
                         )
 
                         if auto_delete:
                             self.delete_message(receipt_handle)
                             logger.info(
-                                f"Message with attributes {message_ids} auto-deleted from queue"
+                                "Matching message auto-deleted from queue",
+                                extra={"message_ids": message_ids},
                             )
 
                         return message
+
                     else:
-                        # Return non-matching message to queue immediately
                         self.change_message_visibility(
                             receipt_handle, visibility_timeout=0
                         )
-                        logger.debug(f"Returned non-matching message to queue")
+                        logger.info(
+                            "Returned non-matching message to queue",
+                            extra={"receipt_handle": receipt_handle},
+                        )
 
                 polling_attempt += 1
 
-            logger.warning(
-                f"Message with attributes {message_ids} not found after {max_polling_attempts} attempts"
-            )
             logger.info(
-                f"Total unique messages checked: {len(checked_receipt_handles)}"
+                "Message not found after max polling attempts",
+                extra={
+                    "message_ids": message_ids,
+                    "max_polling_attempts": max_polling_attempts,
+                    "total_unique_checked": len(checked_receipt_handles),
+                    "checked_receipt_handles": list(checked_receipt_handles),
+                },
             )
             return None
 
-        except Exception as e:
-            logger.error(f"Error receiving message from SQS: {e}")
+        except Exception:
+            logger.exception(
+                "Error receiving message from SQS",
+                extra={
+                    "queue_url": self.queue_url,
+                    "message_ids": message_ids,
+                    "max_messages": max_messages,
+                    "visibility_timeout": visibility_timeout,
+                    "wait_time": wait_time,
+                    "auto_delete": auto_delete,
+                    "max_polling_attempts": max_polling_attempts,
+                    "checked_receipt_handles": list(checked_receipt_handles),
+                },
+            )
             raise
 
     def change_message_visibility(
@@ -186,9 +224,7 @@ class SQSUtils:
         Change the visibility timeout of a message in the queue.
 
         Args:
-            queue: SQS queue URL
             receipt_handle: Receipt handle from receive_message
-            region_name: AWS region name
             visibility_timeout: New visibility timeout in seconds (0 = immediate reappearance)
         """
         try:
@@ -197,10 +233,23 @@ class SQSUtils:
                 ReceiptHandle=receipt_handle,
                 VisibilityTimeout=visibility_timeout,
             )
-            logger.debug(f"Changed message visibility to {visibility_timeout}s")
+            logger.debug(
+                "Changed message visibility",
+                extra={
+                    "receipt_handle": receipt_handle,
+                    "visibility_timeout": visibility_timeout,
+                },
+            )
 
-        except Exception as e:
-            logger.error(f"Error changing message visibility in SQS: {e}")
+        except Exception:
+            logger.exception(
+                "Error changing message visibility",
+                extra={
+                    "receipt_handle": receipt_handle,
+                    "visibility_timeout": visibility_timeout,
+                    "queue_url": self.queue_url,
+                },
+            )
             raise
 
     def delete_message(self, receipt_handle: str):
@@ -209,8 +258,6 @@ class SQSUtils:
 
         Args:
             receipt_handle: The receipt handle from receive_message
-            queue_url: SQS queue URL
-            region_name: AWS region name
 
         Returns:
             None
@@ -220,9 +267,16 @@ class SQSUtils:
                 QueueUrl=self.queue_url, ReceiptHandle=receipt_handle
             )
             logger.info(
-                f"Message deleted successfully with receipt_handle: {receipt_handle}"
+                "Message deleted successfully",
+                extra={"receipt_handle": receipt_handle},
             )
 
-        except Exception as e:
-            logger.error(f"Error deleting message from SQS: {e}")
+        except Exception:
+            logger.exception(
+                "Error deleting message from SQS",
+                extra={
+                    "receipt_handle": receipt_handle,
+                    "queue_url": self.queue_url,
+                },
+            )
             raise

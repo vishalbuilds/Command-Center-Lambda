@@ -1,10 +1,10 @@
 from common.utils_methods.connect_utils import ConnectUtils
 from common.models.default_strategy import DefaultStrategy
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 import os
 from datetime import datetime, timezone
 
-LOGGER = Logger(__name__)
+logger = Logger()
 
 
 MAX_CONTACT_ACTIVE_TIME = 2  # hours
@@ -12,30 +12,40 @@ RP_ARN_LIMITS = 100
 
 
 class AutoCleanUpActiveContacts(DefaultStrategy):
+
     def __init__(self, event):
         self.event = event
         self.instance_id = os.environ.get("INSTANCE_ID")
         self.region = os.environ.get("REGION")
         self.connect_utils = ConnectUtils(self.region, self.instance_id)
-        LOGGER.info(
-            f"Initializing AutoCleanUpActiveContacts for instance: {self.instance_id}"
+        logger.info(
+            f"Initializing AutoCleanUpActiveContacts for instance: {self.instance_id}",
+            extra={"instance_id": self.instance_id, "region": self.region},
         )
 
     def do_validate(self):
-        LOGGER.info("Starting validation process")
+        logger.info(
+            "Starting validation process",
+            extra={"instance_id": self.instance_id, "region": self.region},
+        )
 
         if not self.instance_id:
-            LOGGER.error(
-                "Validation failed: INSTANCE_ID environment variable is not set"
+            logger.error(
+                "Validation failed: INSTANCE_ID environment variable is not set",
+                extra={"instance_id": self.instance_id, "region": self.region},
             )
             return False, "INSTANCE_ID environment variable is not set"
 
         if not os.environ.get("REGION"):
-            LOGGER.error("Validation failed: REGION environment variable is not set")
+            logger.error(
+                "Validation failed: REGION environment variable is not set",
+                extra={"instance_id": self.instance_id, "region": self.region},
+            )
             return False, "REGION environment variable is not set"
 
-        LOGGER.info(
-            "Validation successful: All required environment variables are present"
+        logger.info(
+            "Validation successful: All required environment variables are present",
+            extra={"instance_id": self.instance_id, "region": self.region},
         )
         return True, None
 
@@ -48,7 +58,10 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
         total API calls, improves lookup performance, and avoids unnecessary
         iteration over all users / queues.
         """
-        LOGGER.info(f"Fetching routing profiles for instance: {self.instance_id}")
+        logger.info(
+            f"Fetching routing profiles for instance: {self.instance_id}",
+            extra={"instance_id": self.instance_id, "region": self.region},
+        )
 
         try:
             rp_paginator = self.connect_utils._get_paginator("list_routing_profiles")
@@ -58,18 +71,33 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 arns = [rp["Arn"] for rp in page.get("RoutingProfileSummaryList", [])]
                 routing_profile_arns.extend(arns)
 
-            LOGGER.add_tempdata("routing_profile_count", len(routing_profile_arns))
-            LOGGER.info(
-                f"Successfully retrieved {len(routing_profile_arns)} routing profile ARNs"
+            logger.info(
+                f"Successfully retrieved {len(routing_profile_arns)} routing profile ARNs",
+                extra={
+                    "routing_profile_count": len(routing_profile_arns),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
             )
 
             return routing_profile_arns
 
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.add_tempdata("instance_id", self.instance_id)
-            LOGGER.error(
-                f"Failed to retrieve routing profile ARNs for instance {self.instance_id}: {str(e)}"
+            logger.info(
+                "Failed to retrieve routing profile ARNs",
+                extra={
+                    "error": str(e),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
+            logger.exception(
+                f"Failed to retrieve routing profile ARNs for instance {self.instance_id}: {str(e)}",
+                extra={
+                    "error": str(e),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
             )
             raise
 
@@ -77,8 +105,13 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
         """
         Returns the currently active contacts for the given Routing Profile.
         """
-        LOGGER.info(
-            f"Fetching active contacts for {len(routing_profile_arn)} routing profiles"
+        logger.info(
+            f"Fetching active contacts for {len(routing_profile_arn)} routing profiles",
+            extra={
+                "routing_profile_arn_count": len(routing_profile_arn),
+                "instance_id": self.instance_id,
+                "region": self.region,
+            },
         )
 
         try:
@@ -88,12 +121,26 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 "ContactStates": ["CONNECTED"],
             }
 
-            LOGGER.add_tempdata("filter_params", filter_params)
+            logger.info(
+                "Active contact filter params",
+                extra={
+                    "filter_params": filter_params,
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
 
             response = self.connect_utils.get_current_user_data(filter_params)
             user_data_list = response.get("UserDataList", [])
 
-            LOGGER.info(f"Processing {len(user_data_list)} users for active contacts")
+            logger.info(
+                f"Processing {len(user_data_list)} users for active contacts",
+                extra={
+                    "user_count": len(user_data_list),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
 
             contacts_checked = 0
             contacts_exceeding_threshold = 0
@@ -123,32 +170,62 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                         contact_id = contact.get("ContactId")
                         active_contact_ids_list.append(contact_id)
                         contacts_exceeding_threshold += 1
-                        LOGGER.info(
-                            f"Contact {contact_id} exceeds threshold: {duration_hours:.2f} hours active"
+                        logger.info(
+                            f"Contact {contact_id} exceeds threshold: {duration_hours:.2f} hours active",
+                            extra={
+                                "contact_id": contact_id,
+                                "duration_hours": duration_hours,
+                                "instance_id": self.instance_id,
+                                "region": self.region,
+                            },
                         )
 
-            LOGGER.add_tempdata("contacts_checked", contacts_checked)
-            LOGGER.add_tempdata(
-                "contacts_exceeding_threshold", contacts_exceeding_threshold
-            )
-            LOGGER.add_tempdata("active_contact_ids", active_contact_ids_list)
-            LOGGER.info(
-                f"Found {len(active_contact_ids_list)} contacts exceeding {MAX_CONTACT_ACTIVE_TIME} hour threshold out of {contacts_checked} checked"
+            logger.info(
+                f"Found {len(active_contact_ids_list)} contacts exceeding {MAX_CONTACT_ACTIVE_TIME} hour threshold out of {contacts_checked} checked",
+                extra={
+                    "contacts_checked": contacts_checked,
+                    "contacts_exceeding_threshold": contacts_exceeding_threshold,
+                    "active_contact_ids": active_contact_ids_list,
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
             )
 
             return active_contact_ids_list
 
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.add_tempdata("routing_profile_count", len(routing_profile_arn))
-            LOGGER.error(f"Failed to retrieve active contact IDs: {str(e)}")
+            logger.info(
+                "Failed to retrieve active contact IDs",
+                extra={
+                    "error": str(e),
+                    "routing_profile_count": len(routing_profile_arn),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
+            logger.exception(
+                f"Failed to retrieve active contact IDs: {str(e)}",
+                extra={
+                    "error": str(e),
+                    "routing_profile_count": len(routing_profile_arn),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
             raise
 
     def _process_contact_validation_and_disconnect(self, contact_id):
         """
         Validates and disconnects a contact if it exceeds the active time threshold.
         """
-        LOGGER.info(f"Processing contact validation for contact_id: {contact_id}")
+        logger.info(
+            f"Processing contact validation for contact_id: {contact_id}",
+            extra={
+                "contact_id": contact_id,
+                "instance_id": self.instance_id,
+                "region": self.region,
+            },
+        )
 
         try:
             response = self.connect_utils.describe_contact(contact_id)
@@ -161,9 +238,14 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             # Check if already disconnected
             if contact.get("DisconnectTimestamp"):
                 disconnect_ts = contact.get("DisconnectTimestamp")
-                LOGGER.add_tempdata("already_disconnected_contact_id", contact_id)
-                LOGGER.info(
-                    f"Contact {contact_id} is already disconnected at {disconnect_ts}"
+                logger.info(
+                    f"Contact {contact_id} is already disconnected at {disconnect_ts}",
+                    extra={
+                        "already_disconnected_contact_id": contact_id,
+                        "disconnect_ts": disconnect_ts,
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
                 )
                 return {
                     "status": "Already_Disconnected",
@@ -184,15 +266,35 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 datetime.now(timezone.utc) - last_update_timestamp
             ).total_seconds() / 3600
 
-            LOGGER.add_tempdata("contact_duration_hours", f"{duration_hours:.2f}")
+            logger.info(
+                "Contact duration hours",
+                extra={
+                    "contact_duration_hours": f"{duration_hours:.2f}",
+                    "contact_id": contact_id,
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
 
             if duration_hours >= MAX_CONTACT_ACTIVE_TIME:
-                LOGGER.info(
-                    f"Attempting to disconnect contact {contact_id} (active for {duration_hours:.2f} hours)"
+                logger.info(
+                    f"Attempting to disconnect contact {contact_id} (active for {duration_hours:.2f} hours)",
+                    extra={
+                        "contact_id": contact_id,
+                        "duration_hours": duration_hours,
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
                 )
                 self.connect_utils.stop_contact(contact_id)
-                LOGGER.add_tempdata("disconnected_contact_id", contact_id)
-                LOGGER.info(f"Successfully disconnected contact {contact_id}")
+                logger.info(
+                    f"Successfully disconnected contact {contact_id}",
+                    extra={
+                        "disconnected_contact_id": contact_id,
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
+                )
 
                 return {
                     "status": "Disconnected",
@@ -201,9 +303,14 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                     "duration_hours": round(duration_hours, 2),
                 }
             else:
-                LOGGER.add_tempdata("in_progress_contact_id", contact_id)
-                LOGGER.info(
-                    f"Contact {contact_id} not disconnected: active for {duration_hours:.2f} hours (threshold: {MAX_CONTACT_ACTIVE_TIME} hours)"
+                logger.info(
+                    f"Contact {contact_id} not disconnected: active for {duration_hours:.2f} hours (threshold: {MAX_CONTACT_ACTIVE_TIME} hours)",
+                    extra={
+                        "in_progress_contact_id": contact_id,
+                        "duration_hours": duration_hours,
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
                 )
 
                 return {
@@ -214,17 +321,37 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 }
 
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.add_tempdata("failed_contact_id", contact_id)
-            LOGGER.error(f"Failed to process contact {contact_id}: {str(e)}")
+            logger.info(
+                "Failed to process contact",
+                extra={
+                    "error": str(e),
+                    "failed_contact_id": contact_id,
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
+            logger.exception(
+                f"Failed to process contact {contact_id}: {str(e)}",
+                extra={
+                    "error": str(e),
+                    "failed_contact_id": contact_id,
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
             raise
 
     def do_operation(self):
         """
         Main operation to clean up active contacts that exceed the time threshold.
         """
-        LOGGER.info(
-            f"Starting contact cleanup operation with {MAX_CONTACT_ACTIVE_TIME} hour threshold"
+        logger.info(
+            f"Starting contact cleanup operation with {MAX_CONTACT_ACTIVE_TIME} hour threshold",
+            extra={
+                "MAX_CONTACT_ACTIVE_TIME": MAX_CONTACT_ACTIVE_TIME,
+                "instance_id": self.instance_id,
+                "region": self.region,
+            },
         )
 
         try:
@@ -236,27 +363,52 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
 
             # Get routing profiles
             rp_arn_list = self._routing_profile_arn()
-            LOGGER.info(
-                f"Processing {len(rp_arn_list)} routing profiles in batches of {RP_ARN_LIMITS}"
+            logger.info(
+                f"Processing {len(rp_arn_list)} routing profiles in batches of {RP_ARN_LIMITS}",
+                extra={
+                    "routing_profile_count": len(rp_arn_list),
+                    "RP_ARN_LIMITS": RP_ARN_LIMITS,
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
             )
 
             # Get active contacts in batches
             all_active_contacts = []
             for i in range(0, len(rp_arn_list), RP_ARN_LIMITS):
                 batch_arns = rp_arn_list[i : i + RP_ARN_LIMITS]
-                LOGGER.info(
-                    f"Processing batch {i//RP_ARN_LIMITS + 1}: {len(batch_arns)} routing profiles"
+                logger.info(
+                    f"Processing batch {i//RP_ARN_LIMITS + 1}: {len(batch_arns)} routing profiles",
+                    extra={
+                        "batch_number": i // RP_ARN_LIMITS + 1,
+                        "batch_size": len(batch_arns),
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
                 )
                 batch_contacts = self._active_contact_ids(batch_arns)
                 all_active_contacts.extend(batch_contacts)
 
-            LOGGER.add_tempdata("total_active_contacts", len(all_active_contacts))
-            LOGGER.info(f"Total active contacts found: {len(all_active_contacts)}")
+            logger.info(
+                f"Total active contacts found: {len(all_active_contacts)}",
+                extra={
+                    "total_active_contacts": len(all_active_contacts),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
 
             # Process each contact
             for idx, contact_id in enumerate(all_active_contacts, 1):
-                LOGGER.info(
-                    f"Processing contact {idx}/{len(all_active_contacts)}: {contact_id}"
+                logger.info(
+                    f"Processing contact {idx}/{len(all_active_contacts)}: {contact_id}",
+                    extra={
+                        "contact_index": idx,
+                        "total_contacts": len(all_active_contacts),
+                        "contact_id": contact_id,
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
                 )
 
                 try:
@@ -284,8 +436,15 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                                 ),
                             }
                         )
-                        LOGGER.add_tempdata("disconnected_contact_id", contact_id)
-                        LOGGER.info(f"Contact {contact_id} successfully disconnected")
+                        logger.info(
+                            f"Contact {contact_id} successfully disconnected",
+                            extra={
+                                "disconnected_contact_id": contact_id,
+                                "contact_index": idx,
+                                "instance_id": self.instance_id,
+                                "region": self.region,
+                            },
+                        )
 
                     elif status == "In_Progress":
                         in_progress_count += 1
@@ -301,9 +460,14 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                                 ),
                             }
                         )
-                        LOGGER.add_tempdata("in_progress_contact_id", contact_id)
-                        LOGGER.info(
-                            f"Contact {contact_id} still in progress (below threshold)"
+                        logger.info(
+                            f"Contact {contact_id} still in progress (below threshold)",
+                            extra={
+                                "in_progress_contact_id": contact_id,
+                                "contact_index": idx,
+                                "instance_id": self.instance_id,
+                                "region": self.region,
+                            },
                         )
 
                     elif status == "Already_Disconnected":
@@ -320,9 +484,23 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
 
                 except Exception as contact_error:
                     failed_count += 1
-                    LOGGER.add_tempdata("error", str(contact_error))
-                    LOGGER.error(
-                        f"Failed to process contact {contact_id}: {str(contact_error)}"
+                    logger.info(
+                        "Failed to process contact",
+                        extra={
+                            "error": str(contact_error),
+                            "contact_id": contact_id,
+                            "instance_id": self.instance_id,
+                            "region": self.region,
+                        },
+                    )
+                    logger.exception(
+                        f"Failed to process contact {contact_id}: {str(contact_error)}",
+                        extra={
+                            "error": str(contact_error),
+                            "contact_id": contact_id,
+                            "instance_id": self.instance_id,
+                            "region": self.region,
+                        },
                     )
 
             # Summary logging
@@ -334,8 +512,14 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 "failed": failed_count,
             }
 
-            LOGGER.add_tempdata("operation_summary", summary)
-            LOGGER.info(f"Contact cleanup operation completed: {summary}")
+            logger.info(
+                f"Contact cleanup operation completed: {summary}",
+                extra={
+                    "operation_summary": summary,
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
 
             return {
                 "status": "Success",
@@ -345,6 +529,20 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             }
 
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"Contact cleanup operation failed: {str(e)}")
+            logger.info(
+                "Contact cleanup operation failed",
+                extra={
+                    "error": str(e),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
+            logger.exception(
+                f"Contact cleanup operation failed: {str(e)}",
+                extra={
+                    "error": str(e),
+                    "instance_id": self.instance_id,
+                    "region": self.region,
+                },
+            )
             raise

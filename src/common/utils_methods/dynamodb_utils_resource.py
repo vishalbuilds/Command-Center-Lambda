@@ -6,11 +6,11 @@ including single and batch CRUD, attribute-based queries, existence checks, and 
 All methods include logging and error handling for robust production use.
 """
 
+from aws_lambda_powertools import Logger
 from common.client_record.dynamodb_resource import (
     dynamoDB_resource,
     dynamoDB_condition_Expression,
 )
-from common.models.logger import Logger
 
 
 TABLE_NAME = "tableName"
@@ -18,7 +18,7 @@ KEY_NAME = "keyName"
 KEY_VALUE = "keyValue"
 
 
-logger = Logger(__name__)
+logger = Logger()
 
 
 class DynamoDBUtilsResource:
@@ -72,7 +72,8 @@ class DynamoDBUtilsResource:
             Exception: If the operation fails.
         """
         logger.info(
-            f"Fetching item from {self.table_name} with key {key_name}:{key_value}"
+            "Fetching item from {self.table_name} with key {key_name}:{key_value}",
+            extra={key_name: key_value, "table_name": self.table_name},
         )
         try:
             response = self.dynamodb_table.get_item(key={key_name: key_value})
@@ -81,7 +82,10 @@ class DynamoDBUtilsResource:
                 return response["item"]
 
         except Exception as e:
-            logger.error(f"Error fetching item: {e}")
+            logger.exception(
+                f"Error fetching item",
+                extra={key_name: key_value, "table_name": self.table_name},
+            )
             raise
 
     def query_items_by_key_eq(
@@ -102,7 +106,8 @@ class DynamoDBUtilsResource:
             Exception: If the operation fails.
         """
         logger.info(
-            f"Fetching item from {self.table_name} with key {key_name}:{key_value}"
+            "Fetching item from {self.table_name} with key {key_name}:{key_value}",
+            extra={key_name: key_value, "table_name": self.table_name},
         )
         try:
             response = self.dynamodb_table.query(
@@ -116,7 +121,10 @@ class DynamoDBUtilsResource:
                 return response["item"]
 
         except Exception as e:
-            logger.error(f"Error fetching item: {e}")
+            logger.exception(
+                f"Error fetching item",
+                extra={key_name: key_value, "table_name": self.table_name},
+            )
             raise
 
     def update_single_item_by_pk(
@@ -137,7 +145,8 @@ class DynamoDBUtilsResource:
             Exception: If the operation fails.
         """
         logger.info(
-            f"update data in {self.table_name} with primary key{key_name}:{key_value} and data{update_data}"
+            f"update data in {self.table_name} with primary key{key_name}:{key_value} and data{update_data}",
+            extra={key_name: key_value, "table_name": self.table_name, **update_data},
         )
         try:
             update_expression, expression_attr_name, expression_attr_values = (
@@ -150,17 +159,26 @@ class DynamoDBUtilsResource:
                 ExpressionAttributeValues=expression_attr_values,
             )
         except Exception as e:
-            logger.error(
-                f"error in updating data in {self.table_name} with primary key{key_name}:{key_value} and data{update_data}"
+            logger.exception(
+                f"error in updating data in {self.table_name} with primary key{key_name}:{key_value} and data{update_data}",
+                extra={
+                    key_name: key_value,
+                    "table_name": self.table_name,
+                    **update_data,
+                },
             )
             raise
 
     def put_item(self, item: dict) -> None:
-        logger.info(f"Putting data in {self.table_name} with item: {item}")
+        logger.info(
+            f"Putting data in {self.table_name} with item: {item}",
+            extra={**item, "table_name": self.table_name},
+        )
         try:
             self.dynamodb_table.put_item(Item=item)
         except Exception as e:
             logger.error(
-                f"Error in putting data in {self.table_name} with item: {item}"
+                f"Error in putting data in {self.table_name} with item: {item}",
+                extra={**item, "table_name": self.table_name},
             )
             raise

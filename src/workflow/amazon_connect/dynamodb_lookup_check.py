@@ -1,7 +1,7 @@
 from workflow.amazon_connect.dynamodb_lookup import DynamodbLookup
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 
-LOGGER = Logger(__name__)
+logger = Logger()
 
 
 class DynamoDBLookupCheck(DynamodbLookup):
@@ -18,14 +18,16 @@ class DynamoDBLookupCheck(DynamodbLookup):
 
             if item_attr:
                 message = f"Item found in table: {table_name}"
-                LOGGER.info(message)
+                logger.info(message)
                 return {"exists": True, "message": message, "item": item_attr}
             else:
                 message = f"Item not found in table: {table_name}"
-                LOGGER.info(message)
+                logger.info(message)
                 return {"exists": False, "message": message, "item": None}
 
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"DynamoDB lookup operation failed: {str(e)}")
+            logger.info(
+                "Error occurred in DynamoDB lookup check", extra={"error": str(e)}
+            )
+            logger.exception(f"DynamoDB lookup operation failed: {str(e)}")
             raise
