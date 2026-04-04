@@ -1,4 +1,5 @@
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
+
 from common.models.lambda_response import LambdaResponse
 from workflow.amazon_connect.imports import *
 from workflow.api_gateway_http.imports import *
@@ -11,7 +12,7 @@ ALL_INVOCATION_TYPE_LIST = (
     AMAZON_CONNECT + API_GATEWAY_HTTP + API_GATEWAY_REST + FUNCTION_URL + S3
 )
 
-LOGGER = Logger(__name__)
+LOGGER = Logger()
 
 
 class StrategyFactory:
@@ -20,71 +21,82 @@ class StrategyFactory:
         self.invoke_type = invoke_type
 
         if not self._validate_strategy():
-            LOGGER.error(f"Failed in validate strategy")
-            raise Exception(f"Failed in validate strategy")
+            LOGGER.error("Failed to validate strategy")
+            raise ValueError("Failed to validate strategy")
 
-    # validation
-    def _validate_strategy(self):
+    def _validate_strategy(self) -> bool:
         if self.invoke_type not in globals().keys():
-            LOGGER.add_tempdata("Invalid invoke strategy type", self.invoke_type)
+            LOGGER.info("Invalid invoke type", extra={"invoke_type": self.invoke_type})
             return False
 
         if "request_type" not in self.event:
-            LOGGER.add_tempdata("Event must contain request_type", self.event)
+            LOGGER.info("Missing request_type in event")
             return False
 
         if self.event.get("request_type") not in ALL_INVOCATION_TYPE_LIST:
-            LOGGER.add_tempdata("Invalid strategy", self.event.get("request_type"))
+            LOGGER.info(
+                "Invalid request type",
+                extra={"request_type": self.event.get("request_type")},
+            )
             return False
+
         return True
 
-    # initiating the strategy and call the invocation class
     def _initiate_strategy(self):
-        try:
-            request_type = self.event.get("request_type")
-            self.strategy_class = globals().get(request_type, None)
-            LOGGER.info(f"Initiating strategy: {request_type}")
+        request_type = self.event.get("request_type")
+        LOGGER.info("Initiating strategy", extra={"strategy_class": request_type})
 
-            if self.strategy_class is None:
-                LOGGER.add_tempdata("Strategy class not found in globals", request_type)
-                raise Exception(f"Strategy class '{request_type}' not found in globals")
+        self.strategy_class = globals().get(request_type, None)
 
-        except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"Error initiating strategy: {e}")
-            raise Exception(f"Failed to initiate strategy: {e}")
+        if self.strategy_class is None:
+            LOGGER.error(
+                "Strategy class not found in globals",
+                extra={"strategy_class": request_type},
+            )
+            raise ValueError(f"Strategy class '{request_type}' not found in globals")
 
     def _pass_event_to_strategy(self):
+        request_type = self.event.get("request_type")
         try:
             self.strategy_class_obj = self.strategy_class(self.event)
-            LOGGER.info(f"Event passed to strategy: {self.event}")
-        except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"Error passing event to strategy: {e}")
+            LOGGER.info("Event passed to strategy")
+        except Exception:
+            LOGGER.exception(
+                "Error passing event to strategy",
+                extra={"strategy_class": request_type},
+            )
+            raise
 
-    def execute(self):
+    def execute(self) -> LambdaResponse:
+        # --- Initiate & pass event ---
         try:
             self._initiate_strategy()
             self._pass_event_to_strategy()
+        except Exception as e:
+            LOGGER.exception("Failed to initiate strategy or pass event")
+            return LambdaResponse.error(message=str(e))
 
-            # with failed validation result, error=true, some_error and with passed validation result, error=true, None
+        # --- Validate ---
+        try:
             result, error = self.strategy_class_obj.do_validate()
             if not result:
                 LOGGER.error(
-                    f"validation failed from called strategy_class with error:{error}"
+                    "Validation failed from strategy class",
+                    extra={"error": error},
                 )
-                raise Exception("validation failed from called strategy_class")
+                return LambdaResponse.error(message=str(error))
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"Error in validation from called strategy_class: {e}")
+            LOGGER.exception("Unexpected error during strategy validation")
             return LambdaResponse.error(message=str(e))
 
+        # --- Execute ---
         try:
             strategy_response = self.strategy_class_obj.do_operation()
-            LOGGER.add_metadata("strategy_response", strategy_response)
-            LOGGER.info(f"Strategy response: {strategy_response}")
+            LOGGER.info(
+                "Strategy executed successfully",
+                extra={"strategy_response": strategy_response},
+            )
             return strategy_response
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"Error in processing event from called strategy_class: {e}")
+            LOGGER.exception("Error during strategy operation")
             return LambdaResponse.error(message=str(e))

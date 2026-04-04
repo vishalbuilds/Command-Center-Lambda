@@ -8,10 +8,11 @@ deleting secrets.
 All methods include logging and error handling for robust production use.
 """
 
+from aws_lambda_powertools import Logger
 from common.client_record.secretsmanager_client import secretsmanager_client
-from common.models.logger import Logger
 
-logger = Logger(__name__)
+
+logger = Logger()
 
 
 class SecretsManagerUtils:
@@ -29,9 +30,13 @@ class SecretsManagerUtils:
         """
         try:
             logger.info(
-                f"getting secreate from secretsmanager:{secret_name} from region:{self.region_name}"
+                f"getting secreate from secretsmanager:{secret_name} from region:{self.region_name}",
+                extra={"secret_name": secret_name},
             )
             return self.secretsmanager_client.get_secret_value(SecretId=secret_name)
         except Exception as e:
-            logger.error(f"Error in getting paginator: {e}")
+            logger.exception(
+                f"Error in getting paginator: {e}",
+                extra={"secret_name": secret_name},
+            )
             raise

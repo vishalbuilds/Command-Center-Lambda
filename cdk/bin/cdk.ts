@@ -77,7 +77,7 @@ const iamRoleStack = new IamRoleStack(
     description: `iam-role for lambda function ${lambdaTags.functionName} in environment ${universalTags.Environment} for region ${universalTags.Region} with infra version ${universalTags.InfraVersion}`,
     policyStatements: policies,
     ...cdkEnv,
-  }
+  },
 );
 
 // Lambda stack
@@ -92,9 +92,9 @@ new LambdaStack(
     subnets: cdkRegionContext.vpc.subnets,
     functionName: cdkRegionContext.lambda.functionName,
     description: cdkRegionContext.lambda.description,
-    tags: lambdaTags,
+    environmentVariables: lambdaTags,
     ...cdkEnv,
-  }
+  },
 );
 
 // Apply tags to all stacks

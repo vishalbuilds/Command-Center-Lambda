@@ -5,11 +5,11 @@ This class provides high-level, descriptive methods for common S3 operations suc
 All methods include logging and error handling for robust production use.
 """
 
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 from common.client_record.s3_client import s3_client
 from typing import Literal
 
-logger = Logger(__name__)
+logger = Logger()
 
 
 class S3Utils:
@@ -30,10 +30,16 @@ class S3Utils:
             Exception: If the operation fails.
         """
         try:
-            logger.info(f"Getting object from bucket: {self.bucket}, key: {key}")
+            logger.info(
+                f"Getting object from bucket: {self.bucket}, key: {key}",
+                extra={"key": key, "bucket": self.bucket},
+            )
             return self.s3_client.get_object(Bucket=self.bucket, Key=key)
         except Exception as e:
-            logger.error(f"Error getting object: {e}")
+            logger.error(
+                f"Error getting object",
+                extra={"key": key, "bucket": self.bucket},
+            )
             raise
 
     def put_object(self, key, body):
@@ -49,10 +55,24 @@ class S3Utils:
             Exception: If the operation fails.
         """
         try:
-            logger.info(f"Putting object to bucket: {self.bucket}, key: {key}")
+            logger.info(
+                f"Putting object to bucket: {self.bucket}, key: {key}",
+                extra={
+                    "key": key,
+                    "body": body,
+                    "bucket": self.bucket,
+                },
+            )
             return self.s3_client.put_object(Bucket=self.bucket, Key=key, Body=body)
         except Exception as e:
-            logger.error(f"Error putting object: {e}")
+            logger.error(
+                f"Error putting object: {e}",
+                extra={
+                    "key": key,
+                    "body": body,
+                    "bucket": self.bucket,
+                },
+            )
             raise
 
     def delete_object(self, key):
@@ -67,10 +87,22 @@ class S3Utils:
             Exception: If the operation fails.
         """
         try:
-            logger.info(f"Deleting object from bucket: {self.bucket}, key: {key}")
+            logger.info(
+                f"Deleting object from bucket: {self.bucket}, key: {key}",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                },
+            )
             return self.s3_client.delete_object(Bucket=self.bucket, Key=key)
         except Exception as e:
-            logger.error(f"Error deleting object: {e}")
+            logger.error(
+                f"Error deleting object: {e}",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                },
+            )
             raise
 
     def list_objects(self, prefix):
@@ -85,10 +117,22 @@ class S3Utils:
             Exception: If the operation fails.
         """
         try:
-            logger.info(f"Listing objects in bucket: {self.bucket}, prefix: {prefix}")
+            logger.info(
+                f"Listing objects in bucket: {self.bucket}, prefix: {prefix}",
+                extra={
+                    "prefix": prefix,
+                    "bucket": self.bucket,
+                },
+            )
             return self.s3_client.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
         except Exception as e:
-            logger.error(f"Error listing objects: {e}")
+            logger.error(
+                f"Error listing objects",
+                extra={
+                    "prefix": prefix,
+                    "bucket": self.bucket,
+                },
+            )
             raise
 
     def create_presigned_url(
@@ -110,12 +154,28 @@ class S3Utils:
             str: Pre-signed URL as string, or None if error.
         """
         try:
-            logger.info(f"Creating presign url for  {self.bucket}, prefix: {key}")
+            logger.info(
+                f"Creating presign url for  {self.bucket}, prefix: {key}",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                    "operation": operation,
+                    "expiration": expiration,
+                },
+            )
             return self.s3_client.generate_presigned_url(
                 ClientMethod=operation,
                 Params={"Bucket": self.bucket, "Key": key},
                 ExpiresIn=expiration,
             )
         except Exception as e:
-            logger.error(f"Error listing objects: {e}")
+            logger.error(
+                f"Error listing objects: {e}",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                    "operation": operation,
+                    "expiration": expiration,
+                },
+            )
             raise

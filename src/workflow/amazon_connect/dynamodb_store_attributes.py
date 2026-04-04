@@ -1,9 +1,9 @@
 from common.utils_methods.dynamodb_utils_resource import DynamoDBUtilsResource
 from common.models.default_strategy import DefaultStrategy
-from common.models.logger import Logger
+from aws_lambda_powertools import Logger
 import os
 
-LOGGER = Logger(__name__)
+logger = Logger()
 REGION = os.environ.get("REGION")
 
 
@@ -54,7 +54,7 @@ class DynamoDBStoreAttributes(DefaultStrategy):
 
         for key in ["TABLE_NAME", "KEY_NAME", "KEY_VALUE"]:
             if not self.event.get(key):
-                LOGGER.error(f"Missing required parameter: {key}")
+                logger.error(f"Missing required parameter: {key}")
                 missing_fields.append(f"Missing required parameter: {key}")
 
         return (False, missing_fields) if missing_fields else (True, None)
@@ -67,9 +67,11 @@ class DynamoDBStoreAttributes(DefaultStrategy):
             payload = self._customise_data_from_connect_event(self.event)
             self.dynamodb_resource.put_item(payload)
 
-            LOGGER.info(f"Record saved successfully in DynamoDB. Payload: {payload}")
+            logger.info(
+                f"Record saved successfully in DynamoDB.", extra={"payload": payload}
+            )
 
         except Exception as e:
-            LOGGER.add_tempdata("error", str(e))
-            LOGGER.error(f"DynamoDB operation failed: {str(e)}")
+            logger.info("DynamoDB operation failed", extra={"error": str(e)})
+            logger.exception(f"DynamoDB operation failed: {str(e)}")
             raise
