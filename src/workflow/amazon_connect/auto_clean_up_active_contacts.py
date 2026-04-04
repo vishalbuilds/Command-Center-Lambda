@@ -151,8 +151,13 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                     ts = contact.get("ConnectedToAgentTimestamp")
 
                     if not ts:
-                        LOGGER.warning(
-                            f"Contact {contact.get('ContactId')} missing ConnectedToAgentTimestamp"
+                        logger.info(
+                            f"Contact {contact.get('ContactId')} missing ConnectedToAgentTimestamp",
+                            extra={
+                                "missing_contact_id": contact,
+                                "instance_id": self.instance_id,
+                                "region": self.region,
+                            },
                         )
                         continue
 
@@ -232,7 +237,14 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             contact = response.get("Contact")
 
             if not contact:
-                LOGGER.warning(f"No contact details found for contact_id: {contact_id}")
+                logger.info(
+                    f"No contact details found for contact_id: {contact_id}",
+                    extra={
+                        "contact_id": contact_id,
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
+                )
                 return None
 
             # Check if already disconnected
@@ -256,7 +268,14 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             # Process active contact
             ts = contact.get("LastUpdateTimestamp")
             if not ts:
-                LOGGER.warning(f"Contact {contact_id} missing LastUpdateTimestamp")
+                logger.info(
+                    f"Contact {contact_id} missing LastUpdateTimestamp",
+                    extra={
+                        "contact_id": contact_id,
+                        "instance_id": self.instance_id,
+                        "region": self.region,
+                    },
+                )
                 return None
 
             last_update_timestamp = (
