@@ -64,24 +64,18 @@ class TestAutoCleanUpActiveContacts:
         """Test successful routing profile ARN retrieval."""
         event = {"test": "data"}
         instance = AutoCleanUpActiveContacts(event)
-        
-        # Mock paginator
-        mock_paginator = MagicMock()
-        mock_paginator.paginate.return_value = [
-            {
-                "RoutingProfileSummaryList": [
-                    {"Arn": "arn:aws:connect:us-east-1:123456789012:instance/test/routing-profile/rp1"},
-                    {"Arn": "arn:aws:connect:us-east-1:123456789012:instance/test/routing-profile/rp2"}
-                ]
-            }
+
+        instance.connect_utils.list_routing_profile.return_value = [
+            {"Arn": "arn:aws:connect:us-east-1:123456789012:instance/test/routing-profile/rp1"},
+            {"Arn": "arn:aws:connect:us-east-1:123456789012:instance/test/routing-profile/rp2"},
         ]
-        instance.connect_utils._get_paginator.return_value = mock_paginator
-        
+
         result = instance._routing_profile_arn()
-        
+
         assert len(result) == 2
         assert "rp1" in result[0]
         assert "rp2" in result[1]
+        instance.connect_utils.list_routing_profile.assert_called_once()
     
     @patch.dict('os.environ', {'INSTANCE_ID': 'test-instance-id', 'REGION': 'us-east-1'})
     @patch('workflow.amazon_connect.auto_clean_up_active_contacts.ConnectUtils')

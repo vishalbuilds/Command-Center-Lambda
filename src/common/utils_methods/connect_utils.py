@@ -276,7 +276,7 @@ class ConnectUtils:
                 InstanceId=self.instanceId, ContactId=contactId, Tags=tags
             )
         except Exception as e:
-            logger.error(
+            logger.exception(
                 "Error in tagging contactId",
                 extra={**tags, "contactId": contactId},
             )

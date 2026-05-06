@@ -59,7 +59,6 @@ class S3Utils:
                 f"Putting object to bucket: {self.bucket}, key: {key}",
                 extra={
                     "key": key,
-                    "body": body,
                     "bucket": self.bucket,
                 },
             )
@@ -69,7 +68,6 @@ class S3Utils:
                 f"Error putting object: {e}",
                 extra={
                     "key": key,
-                    "body": body,
                     "bucket": self.bucket,
                 },
             )

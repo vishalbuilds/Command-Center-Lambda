@@ -64,12 +64,8 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
         )
 
         try:
-            rp_paginator = self.connect_utils._get_paginator("list_routing_profiles")
-            routing_profile_arns = []
-
-            for page in rp_paginator.paginate(InstanceId=self.instance_id):
-                arns = [rp["Arn"] for rp in page.get("RoutingProfileSummaryList", [])]
-                routing_profile_arns.extend(arns)
+            routing_profiles = self.connect_utils.list_routing_profile()
+            routing_profile_arns = [rp["Arn"] for rp in routing_profiles]
 
             logger.info(
                 f"Successfully retrieved {len(routing_profile_arns)} routing profile ARNs",

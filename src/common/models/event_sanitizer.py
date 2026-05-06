@@ -88,6 +88,8 @@ class EventSanitizer:
         return sanitized
 
     def get_sanitized_data(self) -> Dict:
+        if self.event is None:
+            return {}
         if self.event.get("isSanitizationEnabled", False):
             LOGGER.info(
                 "Sanitisation is enabled", extra={"maskText": self.custom_mask_text}

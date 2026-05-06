@@ -29,12 +29,16 @@ class S3GetFile(DefaultStrategy):
         try:
             s3 = S3Utils(self.bucket)
             obj = s3.get_object(self.key)
+            body = obj["Body"].read().decode("utf-8")
+            content_type = obj.get("ContentType", "")
             logger.info(f"Successfully retrieved object from {self.bucket}/{self.key}")
             return {
                 "statusCode": 200,
                 "message": "Successfully retrieved object",
                 "bucket": self.bucket,
                 "key": self.key,
+                "content_type": content_type,
+                "body": body,
             }
         except Exception as e:
             logger.exception(

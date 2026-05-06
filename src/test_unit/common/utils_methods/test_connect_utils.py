@@ -79,7 +79,7 @@ class TestConnectUtils:
         utils.stop_contact("contact-id")
         
         mock_client.stop_contact.assert_called_once_with(
-            instanceId="instance-id",
+            InstanceId="instance-id",
             ContactId="contact-id",
             DisconnectReason={'Code': 'OTHERS'}
         )
@@ -95,7 +95,7 @@ class TestConnectUtils:
         utils.tag_contact("contact-id", tags)
         
         mock_client.tag_contact.assert_called_once_with(
-            instanceId="instance-id",
+            InstanceId="instance-id",
             ContactId="contact-id",
             Tags=tags
         )

@@ -4,7 +4,6 @@ from aws_lambda_powertools import Logger
 import os
 
 logger = Logger()
-REGION = os.environ.get("REGION")
 
 
 class DynamoDBStoreAttributes(DefaultStrategy):
@@ -26,7 +25,8 @@ class DynamoDBStoreAttributes(DefaultStrategy):
         if not table_name:
             raise ValueError("TABLE_NAME must be provided in event")
 
-        self.dynamodb_resource = DynamoDBUtilsResource(REGION, table_name)
+        region = os.environ.get("REGION")
+        self.dynamodb_resource = DynamoDBUtilsResource(region, table_name)
 
     def _customise_data_from_connect_event(self, event: dict) -> dict:
         """
@@ -52,7 +52,7 @@ class DynamoDBStoreAttributes(DefaultStrategy):
         """
         missing_fields = []
 
-        for key in ["TABLE_NAME", "KEY_NAME", "KEY_VALUE"]:
+        for key in ["KEY_NAME", "KEY_VALUE"]:
             if not self.event.get(key):
                 logger.error(f"Missing required parameter: {key}")
                 missing_fields.append(f"Missing required parameter: {key}")

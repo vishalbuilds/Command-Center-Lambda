@@ -111,7 +111,7 @@ class TestStrategyFactory:
     def test_execute_validation_failure(self, mock_pass_event, mock_initiate):
         """Test execution with validation failure."""
         mock_strategy_obj = MagicMock()
-        mock_strategy_obj.do_validate.return_value = False
+        mock_strategy_obj.do_validate.return_value = (False, ["Validation error"])
 
         event = {"request_type": "StatusCheckerConnect"}
         invoke_type = "AMAZON_CONNECT"

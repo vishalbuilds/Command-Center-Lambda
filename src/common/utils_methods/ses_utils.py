@@ -90,7 +90,6 @@ class SESUtils:
         to_email: Optional[List[str]] = None,
         cc_email: Optional[List[str]] = None,
         bcc_email: Optional[List[str]] = None,
-        region_name: str = "us-east-1",
         subject: str = "",
         body_html: str = "",
     ) -> Dict[str, Any]:

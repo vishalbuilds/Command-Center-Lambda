@@ -33,14 +33,14 @@ class TestDynamoDBUtils:
         mock_dynamodb_resource.return_value = mock_resource
 
         mock_table.get_item.return_value = {
-            "item": {"id": "test-id", "name": "test-name"}
+            "Item": {"id": "test-id", "name": "test-name"}
         }
 
         utils = DynamoDBUtilsResource("us-east-1", "test-table")
         result = utils.get_single_item_by_pk("id", "test-id")
 
         assert result == {"id": "test-id", "name": "test-name"}
-        mock_table.get_item.assert_called_once_with(key={"id": "test-id"})
+        mock_table.get_item.assert_called_once_with(Key={"id": "test-id"})
 
     @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
     def test_get_single_item_by_pk_exception(self, mock_dynamodb_resource):
@@ -73,7 +73,7 @@ class TestDynamoDBUtils:
             update_expression,
             attr_names,
             attr_values,
-        ) = utils._buid_dynamoDB_update_expression(update_data)
+        ) = utils._build_dynamoDB_update_expression(update_data)
 
         assert update_expression == "SET #exp_status_key=:new_status_value"
         assert attr_names == {"#exp_status_key": "status"}
@@ -96,7 +96,7 @@ class TestDynamoDBUtils:
             update_expression,
             attr_names,
             attr_values,
-        ) = utils._buid_dynamoDB_update_expression(update_data)
+        ) = utils._build_dynamoDB_update_expression(update_data)
 
         assert update_expression.startswith("SET ")
         assert "#exp_status_key=:new_status_value" in update_expression

@@ -131,13 +131,13 @@ class DynamoDBUtilsResource:
         key_value: str,
     ) -> None:
         """
-        Save (put) an item into a DynamoDB table. Optionally use a condition expression.
+        Update an existing item in a DynamoDB table by its primary key.
         Args:
             update_data (dict): The data to update in given table.
             key_name: primary key name
             key_value: primary key value
         Returns:
-            dict: The response from DynamoDB put_item.
+            None
         Raises:
             Exception: If the operation fails.
         """

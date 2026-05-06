@@ -56,13 +56,9 @@ def _is_s3_event(event: dict) -> bool:
 
 def _is_eventbridge(event: dict) -> bool:
     """Check if the event is from EventBridge/CloudWatch Events."""
-    # EventBridge events have both 'detail-type' and 'source' fields
-    # But make sure it's not an S3 event (which can also have 'source')
-    return (
-        "detail-type" in event
-        and event.get("source", "") != "aws.events"
-        and "Records" not in event
-    )
+    # EventBridge events always have 'detail-type'; traditional S3 bucket
+    # notification events use 'Records' instead, so that check excludes them.
+    return "detail-type" in event and "Records" not in event
 
 
 def _is_function_url(request_context: dict) -> bool:

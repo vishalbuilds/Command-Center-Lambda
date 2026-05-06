@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from common.models.lambda_response import LambdaResponse
 
 
 class DefaultStrategy(ABC):
@@ -7,7 +6,7 @@ class DefaultStrategy(ABC):
         self.event = event
 
     @abstractmethod
-    def do_validate(self) -> tuple[bool, list]:
+    def do_validate(self) -> tuple[bool, list | None]:
         """
         Abstract method to validate the event for the specific strategy.
         Must be implemented by concrete strategy classes.

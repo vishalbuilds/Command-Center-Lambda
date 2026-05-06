@@ -36,7 +36,7 @@ class SecretsManagerUtils:
             return self.secretsmanager_client.get_secret_value(SecretId=secret_name)
         except Exception as e:
             logger.exception(
-                f"Error in getting paginator: {e}",
+                f"Error retrieving secret: {secret_name}",
                 extra={"secret_name": secret_name},
             )
             raise

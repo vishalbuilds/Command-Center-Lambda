@@ -1,4 +1,7 @@
-class StatusCheckerFunctionalUrl:
+from common.models.default_strategy import DefaultStrategy
+
+
+class StatusCheckerFunctionalUrl(DefaultStrategy):
     def __init__(self, event):
         self.event = event
 
