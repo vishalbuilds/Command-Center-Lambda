@@ -6,6 +6,7 @@ including single and batch CRUD, attribute-based queries, existence checks, and 
 All methods include logging and error handling for robust production use.
 """
 
+from typing import Optional
 from aws_lambda_powertools import Logger
 from common.client_record.dynamodb_resource import (
     dynamoDB_resource,
@@ -28,7 +29,7 @@ class DynamoDBUtilsResource:
         self.table_name = table_name
         self.dynamodb_table = dynamoDB_resource(region_name).Table(self.table_name)
 
-    def _buid_dynamoDB_update_expression(
+    def _build_dynamoDB_update_expression(
         self, update_data: dict
     ) -> tuple[str, dict, dict]:
         """
@@ -59,7 +60,7 @@ class DynamoDBUtilsResource:
         update_expression = "SET " + ", ".join(update_parts)
         return update_expression, expression_attr_name, expression_attr_values
 
-    def get_single_item_by_pk(self, key_name: str, key_value: str) -> set:
+    def get_single_item_by_pk(self, key_name: str, key_value: str) -> Optional[dict]:
         """
         Fetch a single item from a DynamoDB table by its primery key.
         Args:
@@ -72,14 +73,12 @@ class DynamoDBUtilsResource:
             Exception: If the operation fails.
         """
         logger.info(
-            "Fetching item from {self.table_name} with key {key_name}:{key_value}",
+            f"Fetching item from {self.table_name} with key {key_name}:{key_value}",
             extra={key_name: key_value, "table_name": self.table_name},
         )
         try:
-            response = self.dynamodb_table.get_item(key={key_name: key_value})
-
-            if "item" in response:
-                return response["item"]
+            response = self.dynamodb_table.get_item(Key={key_name: key_value})
+            return response.get("Item")
 
         except Exception as e:
             logger.exception(
@@ -93,7 +92,7 @@ class DynamoDBUtilsResource:
         index_name: str,
         key_name: str,
         key_value: str,
-    ) -> set:
+    ) -> list:
         """
         Fetch all items from a DynamoDB table where a given attribute matches a value.
         Args:
@@ -106,7 +105,7 @@ class DynamoDBUtilsResource:
             Exception: If the operation fails.
         """
         logger.info(
-            "Fetching item from {self.table_name} with key {key_name}:{key_value}",
+            f"Fetching items from {self.table_name} with key {key_name}:{key_value}",
             extra={key_name: key_value, "table_name": self.table_name},
         )
         try:
@@ -116,9 +115,7 @@ class DynamoDBUtilsResource:
                 .Key(key_name)
                 .eq(key_value),
             )
-
-            if "item" in response:
-                return response["item"]
+            return response.get("Items", [])
 
         except Exception as e:
             logger.exception(
@@ -150,7 +147,7 @@ class DynamoDBUtilsResource:
         )
         try:
             update_expression, expression_attr_name, expression_attr_values = (
-                self._buid_dynamoDB_update_expression(update_data)
+                self._build_dynamoDB_update_expression(update_data)
             )
             self.dynamodb_table.update_item(
                 Key={key_name: key_value},

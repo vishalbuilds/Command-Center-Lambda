@@ -5,6 +5,7 @@ This class provides high-level, descriptive methods for starting, getting, and c
 All methods include logging and error handling for robust production use.
 """
 
+import time
 from aws_lambda_powertools import Logger
 from common.client_record.transcribe_client import transcribe_client
 
@@ -35,7 +36,7 @@ class TranscribeUtils:
         try:
             while True:
                 response = self.transcribe_client.get_transcription_job(
-                    transcription_job_name
+                    TranscriptionJobName=transcription_job_name
                 )
                 status = response["TranscriptionJob"]["TranscriptionJobStatus"]
 
@@ -50,8 +51,6 @@ class TranscribeUtils:
                     return status
                 elif status == "IN_PROGRESS":
                     logger.info("Transcription job in progress...")
-                    import time
-
                     time.sleep(5)
                 elif status == "FAILED":
                     logger.error(

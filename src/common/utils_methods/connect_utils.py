@@ -145,7 +145,7 @@ class ConnectUtils:
                 f"Describing contact id {contactId} from region:{self.region_name}"
             )
             return self.connect_client.describe_contact(
-                instanceId=self.instanceId, ContactId=contactId
+                InstanceId=self.instanceId, ContactId=contactId
             )
         except Exception as e:
             logger.exception(
@@ -182,30 +182,32 @@ class ConnectUtils:
                 logged before re-raising.
         """
         try:
-            if SourcePhoneNumber and ContactFlowId and QueueId:
-                logger.error(
-                    "add either queue name or source phone number or contact flow id"
+            if SourcePhoneNumber and QueueId:
+                raise ValueError(
+                    "Provide either SourcePhoneNumber or QueueId, not both"
                 )
             logger.info(
-                f"Inititing outbound voice contact all queue from region:{self.region_name}",
+                f"Initiating outbound voice contact from region:{self.region_name}",
                 extra={
                     "name": name,
                     "DestinationPhoneNumber": DestinationPhoneNumber,
                     "ContactFlowId": ContactFlowId,
-                    "SourcePhoneNumber": (
-                        SourcePhoneNumber if SourcePhoneNumber else None
-                    ),
-                    "QueueId": (QueueId if QueueId else None),
+                    "SourcePhoneNumber": SourcePhoneNumber,
+                    "QueueId": QueueId,
                 },
             )
-            return self.connect_client.start_outbound_voice_contact(
-                name=name,
-                DestinationPhoneNumber=DestinationPhoneNumber,
-                ContactFlowId=ContactFlowId,
-                InstanceId=self.InstanceId,
-                SourcePhoneNumber=SourcePhoneNumber,
-                QueueId=QueueId,
-            )
+            kwargs = {
+                "DestinationPhoneNumber": DestinationPhoneNumber,
+                "ContactFlowId": ContactFlowId,
+                "InstanceId": self.instanceId,
+            }
+            if name:
+                kwargs["Attributes"] = {"Name": name}
+            if SourcePhoneNumber:
+                kwargs["SourcePhoneNumber"] = SourcePhoneNumber
+            if QueueId:
+                kwargs["QueueId"] = QueueId
+            return self.connect_client.start_outbound_voice_contact(**kwargs)
         except Exception as e:
             logger.exception(
                 f"Error in start outbound voice contact",
@@ -239,7 +241,7 @@ class ConnectUtils:
         try:
             logger.info("Disconnecting contact id", extra={"contactId": contactId})
             self.connect_client.stop_contact(
-                instanceId=self.instanceId,
+                InstanceId=self.instanceId,
                 ContactId=contactId,
                 DisconnectReason={"Code": "OTHERS"},
             )
@@ -271,7 +273,7 @@ class ConnectUtils:
                 extra={**tags, "contactId": contactId},
             )
             self.connect_client.tag_contact(
-                instanceId=self.instanceId, ContactId=contactId, Tags=tags
+                InstanceId=self.instanceId, ContactId=contactId, Tags=tags
             )
         except Exception as e:
             logger.error(
@@ -292,7 +294,7 @@ class ConnectUtils:
         try:
             logger.info(f"Getting current user data", extra=filters)
             return self.connect_client.get_current_user_data(
-                instanceId=self.instanceId, Filters=filters
+                InstanceId=self.instanceId, Filters=filters
             )
         except Exception as e:
             logger.error(f"Error in getting current user data", extra=filters)

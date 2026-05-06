@@ -16,11 +16,11 @@ LOGGER = Logger()
 
 
 @LOGGER.inject_lambda_context(log_event=True)
-def lambda_handler(event, context: LambdaContext) -> LambdaResponse:
+def lambda_handler(event, _context: LambdaContext) -> LambdaResponse:
 
     invocation_source = None
 
-    # init checking event source and extracting usefull event
+    # init checking event source and extracting useful event
     try:
         invocation_source = get_invocation_source(event)
         LOGGER.info(
@@ -28,7 +28,7 @@ def lambda_handler(event, context: LambdaContext) -> LambdaResponse:
         )
         event = extract_event_data(event, invocation_source)
     except Exception as e:
-        LOGGER.exception("Error in processing event from function url invocation")
+        LOGGER.exception("Error in processing event source detection")
         return LambdaResponse.error(message=str(e))
 
     # init Event Sanitizer to remove PII information, if isSanitizationEnabled is true and maskText is set with text type required to redact
@@ -51,7 +51,9 @@ def lambda_handler(event, context: LambdaContext) -> LambdaResponse:
 
         # final return from lambda
         return LambdaResponse.success(
-            message="Strategy executed successfully", data=response
+            message="Strategy executed successfully",
+            data=response,
+            json_string_flat=invocation_source == "AMAZON_CONNECT",
         )
     except Exception as e:
         LOGGER.exception("Error in processing final execution")

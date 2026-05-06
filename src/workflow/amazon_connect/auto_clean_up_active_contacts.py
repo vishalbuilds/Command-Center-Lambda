@@ -83,14 +83,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             return routing_profile_arns
 
         except Exception as e:
-            logger.info(
-                "Failed to retrieve routing profile ARNs",
-                extra={
-                    "error": str(e),
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Failed to retrieve routing profile ARNs for instance {self.instance_id}: {str(e)}",
                 extra={
@@ -199,15 +191,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             return active_contact_ids_list
 
         except Exception as e:
-            logger.info(
-                "Failed to retrieve active contact IDs",
-                extra={
-                    "error": str(e),
-                    "routing_profile_count": len(routing_profile_arn),
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Failed to retrieve active contact IDs: {str(e)}",
                 extra={
@@ -340,15 +323,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 }
 
         except Exception as e:
-            logger.info(
-                "Failed to process contact",
-                extra={
-                    "error": str(e),
-                    "failed_contact_id": contact_id,
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Failed to process contact {contact_id}: {str(e)}",
                 extra={
@@ -503,15 +477,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
 
                 except Exception as contact_error:
                     failed_count += 1
-                    logger.info(
-                        "Failed to process contact",
-                        extra={
-                            "error": str(contact_error),
-                            "contact_id": contact_id,
-                            "instance_id": self.instance_id,
-                            "region": self.region,
-                        },
-                    )
                     logger.exception(
                         f"Failed to process contact {contact_id}: {str(contact_error)}",
                         extra={
@@ -548,14 +513,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             }
 
         except Exception as e:
-            logger.info(
-                "Contact cleanup operation failed",
-                extra={
-                    "error": str(e),
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Contact cleanup operation failed: {str(e)}",
                 extra={

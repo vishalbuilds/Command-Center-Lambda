@@ -112,6 +112,11 @@ class SESUtils:
             ValueError: If email validation fails
             Exception: If SES send operation fails
         """
+        _from_email = from_email
+        _to_email = to_email or []
+        _cc_email = cc_email or []
+        _bcc_email = bcc_email or []
+
         try:
             _from_email, _to_email, _cc_email, _bcc_email = (
                 self._prepare_email_addresses(from_email, to_email, cc_email, bcc_email)
