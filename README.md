@@ -54,10 +54,10 @@ CommandCenterLambda/
 │   └── README.md               # CDK-specific documentation
 ├── src/                        # Source code for Lambda functions and utilities
 │   ├── common/                 # Shared utilities and models
-│   │   ├── client_record/
-│   │   ├── constants/
-│   │   ├── models/
-│   │   └── utils_methods/
+│   │   ├── client_record/      # AWS boto3 client record
+│   │   ├── constants/          # All the constants
+│   │   ├── models/             # All the models class
+│   │   └── utils_methods/      # All the utility methods
 │   ├── workflow/               # Lambda function handlers by trigger type
 │   │   ├── amazon_connect/
 │   │   ├── api_gateway_http/
