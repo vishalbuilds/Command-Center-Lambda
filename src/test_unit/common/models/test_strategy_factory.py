@@ -120,7 +120,5 @@ class TestStrategyFactory:
             factory = StrategyFactory(event, invoke_type)
             factory.strategy_class_obj = mock_strategy_obj
 
-            result = factory.execute()
-
-            assert result["statusCode"] == 400
-            assert result["result"] == "error"
+            with pytest.raises(ValueError, match="Validation error"):
+                factory.execute()
