@@ -1,4 +1,7 @@
-class StatusCheckerAPIGateWayHTTP:
+from common.models.default_strategy import DefaultStrategy
+
+
+class StatusCheckerAPIGateWayHTTP(DefaultStrategy):
     def __init__(self, event):
         self.event = event
 

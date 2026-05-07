@@ -39,8 +39,10 @@ class TestLambdaHandler:
         sample_event,
     ):
         """Test successful lambda handler execution."""
-        # Setup mocks
-        mock_get_invocation_source.return_value = "AMAZON_CONNECT"
+        # Use DIRECT_INVOKE so the response uses the standard format
+        # (statusCode int, body JSON string). AMAZON_CONNECT uses the flat
+        # format where statusCode is a string and there is no body key.
+        mock_get_invocation_source.return_value = "DIRECT_INVOKE"
         mock_extract_event_data.return_value = sample_event
 
         mock_sanitizer = MagicMock()

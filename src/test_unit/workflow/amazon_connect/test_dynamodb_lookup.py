@@ -8,7 +8,7 @@ from workflow.amazon_connect.dynamodb_lookup import DynamodbLookup
 
 class TestDynamodbLookup:
     
-    @patch('workflow.amazon_connect.dynamodb_lookup.REGION', 'us-east-1')
+    @patch.dict('os.environ', {'REGION': 'us-east-1'})
     @patch('workflow.amazon_connect.dynamodb_lookup.DynamoDBUtilsResource')
     def test_init_success(self, mock_dynamodb_utils):
         """Test successful initialization."""
@@ -17,9 +17,9 @@ class TestDynamodbLookup:
             "KEY_NAME": "id",
             "KEY_VALUE": "123"
         }
-        
+
         instance = DynamodbLookup(event)
-        
+
         assert instance.event == event
         mock_dynamodb_utils.assert_called_once_with('us-east-1', 'test-table')
     
@@ -50,23 +50,6 @@ class TestDynamodbLookup:
         
         assert result is True
         assert error is None
-    
-    @patch.dict('os.environ', {'REGION': 'us-east-1'})
-    @patch('workflow.amazon_connect.dynamodb_lookup.DynamoDBUtilsResource')
-    def test_do_validate_missing_table_name(self, mock_dynamodb_utils):
-        """Test validation with missing TABLE_NAME."""
-        event = {
-            "TABLE_NAME": "test-table",
-            "KEY_NAME": "id"
-        }
-        
-        instance = DynamodbLookup(event)
-        instance.event = {"KEY_NAME": "id", "KEY_VALUE": "123"}  # Remove TABLE_NAME
-        
-        result, error = instance.do_validate()
-        
-        assert result is False
-        assert "TABLE_NAME" in str(error)
     
     @patch.dict('os.environ', {'REGION': 'us-east-1'})
     @patch('workflow.amazon_connect.dynamodb_lookup.DynamoDBUtilsResource')

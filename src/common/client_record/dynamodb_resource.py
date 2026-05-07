@@ -3,7 +3,7 @@ import boto3.dynamodb.conditions as dynamodb_conditions
 from aws_lambda_powertools import Logger
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 def dynamoDB_resource(region_name: str = "us-east-1"):

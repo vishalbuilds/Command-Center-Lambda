@@ -4,7 +4,7 @@ from aws_lambda_powertools import Logger
 import os
 from datetime import datetime, timezone
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 MAX_CONTACT_ACTIVE_TIME = 2  # hours
@@ -64,12 +64,8 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
         )
 
         try:
-            rp_paginator = self.connect_utils._get_paginator("list_routing_profiles")
-            routing_profile_arns = []
-
-            for page in rp_paginator.paginate(InstanceId=self.instance_id):
-                arns = [rp["Arn"] for rp in page.get("RoutingProfileSummaryList", [])]
-                routing_profile_arns.extend(arns)
+            routing_profiles = self.connect_utils.list_routing_profile()
+            routing_profile_arns = [rp["Arn"] for rp in routing_profiles]
 
             logger.info(
                 f"Successfully retrieved {len(routing_profile_arns)} routing profile ARNs",
@@ -83,14 +79,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             return routing_profile_arns
 
         except Exception as e:
-            logger.info(
-                "Failed to retrieve routing profile ARNs",
-                extra={
-                    "error": str(e),
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Failed to retrieve routing profile ARNs for instance {self.instance_id}: {str(e)}",
                 extra={
@@ -199,15 +187,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             return active_contact_ids_list
 
         except Exception as e:
-            logger.info(
-                "Failed to retrieve active contact IDs",
-                extra={
-                    "error": str(e),
-                    "routing_profile_count": len(routing_profile_arn),
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Failed to retrieve active contact IDs: {str(e)}",
                 extra={
@@ -340,15 +319,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
                 }
 
         except Exception as e:
-            logger.info(
-                "Failed to process contact",
-                extra={
-                    "error": str(e),
-                    "failed_contact_id": contact_id,
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Failed to process contact {contact_id}: {str(e)}",
                 extra={
@@ -503,15 +473,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
 
                 except Exception as contact_error:
                     failed_count += 1
-                    logger.info(
-                        "Failed to process contact",
-                        extra={
-                            "error": str(contact_error),
-                            "contact_id": contact_id,
-                            "instance_id": self.instance_id,
-                            "region": self.region,
-                        },
-                    )
                     logger.exception(
                         f"Failed to process contact {contact_id}: {str(contact_error)}",
                         extra={
@@ -548,14 +509,6 @@ class AutoCleanUpActiveContacts(DefaultStrategy):
             }
 
         except Exception as e:
-            logger.info(
-                "Contact cleanup operation failed",
-                extra={
-                    "error": str(e),
-                    "instance_id": self.instance_id,
-                    "region": self.region,
-                },
-            )
             logger.exception(
                 f"Contact cleanup operation failed: {str(e)}",
                 extra={

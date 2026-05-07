@@ -2,10 +2,10 @@ name: Docker CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master ]
 
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 env:
   IMAGE_NAME: ${{ github.repository }}
@@ -64,8 +64,15 @@ jobs:
           
           # Wait for container to be ready
           echo "Waiting for container to be ready..."
-          sleep 10
-          
+          for i in $(seq 1 15); do
+            if curl -s -o /dev/null "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{}'; then
+              echo "Container is ready"
+              break
+            fi
+            echo "Attempt $i: not ready yet, retrying in 2s..."
+            sleep 2
+          done
+
           # Check if container is running
           docker ps -a
 
@@ -93,7 +100,7 @@ jobs:
           fi
           
           # Check if response contains statusCode: 200
-          if ! echo "$body" | grep -q '"statusCode": 200'; then
+          if ! echo "$body" | grep -q '"statusCode": "200"'; then
             echo "❌ Test failed: Response does not contain statusCode: 200"
             exit 1
           fi

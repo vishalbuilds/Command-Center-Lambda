@@ -3,7 +3,7 @@ from phonenumbers import ValidationResult
 from common.models.default_strategy import DefaultStrategy
 from aws_lambda_powertools import Logger
 
-logger = Logger()
+logger = Logger(child=True)
 
 PLUS_SIGN = "+"
 

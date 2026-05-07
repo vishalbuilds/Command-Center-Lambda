@@ -8,9 +8,7 @@ from common.models.default_strategy import DefaultStrategy
 from aws_lambda_powertools import Logger
 import os
 
-logger = Logger()
-
-REGION = os.environ.get("REGION")
+logger = Logger(child=True)
 
 
 class DynamodbLookup(DefaultStrategy):
@@ -20,14 +18,11 @@ class DynamodbLookup(DefaultStrategy):
         if not table_name:
             raise ValueError("TABLE_NAME must be provided in event")
 
-        self.DynamoDB_Utils_Resource = DynamoDBUtilsResource(REGION, table_name)
+        region = os.environ.get("REGION")
+        self.DynamoDB_Utils_Resource = DynamoDBUtilsResource(region, table_name)
 
     def do_validate(self):
         error = []
-
-        if not self.event.get("TABLE_NAME"):
-            logger.error(f"Missing required parameter: TABLE_NAME")
-            error.append(f"Missing required parameter: TABLE_NAME")
 
         if not self.event.get("KEY_NAME"):
             logger.error(f"Missing required parameter: KEY_NAME")

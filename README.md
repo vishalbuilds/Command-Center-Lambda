@@ -1,6 +1,6 @@
 ![CDK build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/cdk-ci.yml/badge.svg)
 ![Python build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/python-ci.yml/badge.svg)
-![Conatainer build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/container-ci.yml/badge.svg)
+![Container build Status](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/container-ci.yml/badge.svg)
 ![PR validation](https://github.com/vishalbuilds/CommandCenterLambda/actions/workflows/pr-validation-ci.yml/badge.svg)
 ![Code Coverage](https://codecov.io/gh/vishalbuilds/Command-Center-Lambda/branch/main/graph/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
@@ -25,6 +25,36 @@ The primary use case for this repository is to provide a centralized, scalable, 
 - **Containerized Development**: Uses Docker/Podman to replicate the Lambda runtime environment locally, allowing for high-fidelity testing before deployment.
 - **Modular Structure**: Organized by function, making it easy to add, update, or remove individual components.
 - **CI/CD Ready**: Includes placeholders and structure for integrating with continuous integration and deployment pipelines.
+- **Strategy Pattern**: Business logic is dispatched via a `StrategyFactory` that selects the correct handler class based on the `request_type` field in the event, keeping each workflow isolated and independently testable.
+- **Multi-Source Invocation Detection**: Automatically identifies the Lambda trigger source (Amazon Connect, API Gateway REST/HTTP, Lambda Function URL, S3, EventBridge, or Direct Invoke) and extracts the relevant event payload before dispatching.
+- **PII Sanitization**: An `EventSanitizer` layer scrubs sensitive fields (credentials, emails, phone numbers, SSNs, credit cards, etc.) from the event before it reaches business logic. Controlled by the `isSanitizationEnabled` flag in the event.
+- **Structured Logging**: Uses [aws-lambda-powertools](https://docs.powertools.aws.dev/lambda/python/) `Logger` throughout, providing consistent JSON-structured logs with Lambda context injection.
+- **Standardized Responses**: All Lambda responses are wrapped in a `LambdaResponse` model with a consistent `success`/`error` shape.
+
+## 🔄 Request Lifecycle
+
+Every invocation follows this pipeline:
+
+```
+Lambda Event
+    │
+    ▼
+get_invocation_source()        # Detect trigger: AMAZON_CONNECT | API_GATEWAY_REST |
+extract_event_data()           #   API_GATEWAY_HTTP | FUNCTION_URL | S3 | EVENTBRIDGE | DIRECT_INVOKE
+    │
+    ▼
+EventSanitizer                 # Strip PII if isSanitizationEnabled=true
+    │
+    ▼
+StrategyFactory(event,         # Validate invoke_type + request_type, select strategy class
+  invocation_source)
+    │
+    ├── do_validate()          # Strategy-specific input validation
+    └── do_operation()         # Strategy-specific business logic
+    │
+    ▼
+LambdaResponse.success/error   # Standardised JSON response
+```
 
 ## 📂 Project Structure
 
@@ -35,14 +65,14 @@ CommandCenterLambda/
 ├── .github/
 │   └── workflows/              # GitHub Actions CI/CD workflows
 │       ├── cdk-ci.yml
-│       ├── lambda-container-ci.yml
+│       ├── container-ci.yml
 │       ├── pr-validation-ci.yml
 │       └── python-ci.yml
 ├── cdk/                        # AWS CDK infrastructure code (TypeScript)
 │   ├── bin/
 │   │   └── cdk.ts              # CDK App entry point
 │   ├── lib/
-│   │   ├── iam-role-policies/  # iam role policy defination
+│   │   ├── iam-role-policies/  # iam role policy definition
 │   │   │   ├── connect-policy.ts
 │   │   │   ├── s3-policy.ts
 │   │   │   └── dynamodb-policy.ts
@@ -66,8 +96,7 @@ CommandCenterLambda/
 │   │   └── s3/
 │   ├── test_data/              # Sample JSON payloads for testing with fail and pass scenarios
 │   │   ├── amazon_connect_workflow/
-│   │   ├── s3/
-│   │   └── StatusChecker/
+│   │   └── s3/
 │   ├── test_unit/              # Unit tests
 │   │   ├── common/
 │   │   ├── workflow/
@@ -75,7 +104,7 @@ CommandCenterLambda/
 │   │   └── test_lambda_handler.py
 │   ├── lambda_handler.py       # Main Lambda handler entry point
 │   ├── requirements.txt        # Python production dependencies
-│   └── requirements.dev.txt    # Python python development dependencies
+│   └── requirements.dev.txt    # Python development dependencies
 ├── .gitignore
 ├── Dockerfile                  # Dockerfile for building the Lambda container image
 ├── LICENSE                     # MIT License
@@ -107,7 +136,7 @@ cdk deploy -c infraVersion=infraVersion-1 -c awsAccount=123456789012 -c region=u
 
 ### 1. Run Python Unit Tests
 
-The lambda functions uses `pytest` for unit testing with coverage reporting.
+The Lambda functions use `pytest` for unit testing with coverage reporting.
 
 ```bash
 # Run tests with coverage report
@@ -120,9 +149,9 @@ python -m pytest src/test_unit/ -v
 python -m pytest src/test_unit/test_lambda_handler.py -v
 ```
 
-The cdk infrastructure uses `jest` for unit testing with coverage reporting.
+The CDK infrastructure uses `jest` for unit testing with coverage reporting.
 
-### 2. Run Typescript Unit Tests
+### 2. Run TypeScript Unit Tests
 
 ```bash
 # Run all tests with coverage report
@@ -132,7 +161,7 @@ npx jest --coverage --coverageReporters="text" --coverageReporters="html" --verb
 npx jest --verbose
 
 # Run specific test file
-npx jest cdk/test/lambda-stack.test.ts --verbose
+npx jest cdk/test/cdk.test.ts --verbose
 
 ```
 
@@ -270,8 +299,8 @@ Use `curl` or any API client to send a POST request to the local endpoint, mimic
 # Test Amazon Connect status checker workflow
 curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/amazon_connect_workflow/status_checker_connect_event_pass.json"
 
-# Test S3  status checker workflow
-curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/s3_workflow/status_checker_s3_event_pass.json"
+# Test S3 workflow
+curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d @"src/test_data/s3/test_s3_utlis_check.json"
 ```
 
 #### Test with Inline JSON
@@ -330,3 +359,5 @@ docker rm lambda-test
 - [ ] Implement a full CI/CD pipeline with automated testing and deployment.
 - [ ] Expand the collection of Lambda functions to include new features.
 - [ ] Single deployment process with config file.
+- [ ] Add EventBridge and Direct Invoke workflow handlers.
+- [ ] Extend PII sanitization patterns (configurable via environment variable).

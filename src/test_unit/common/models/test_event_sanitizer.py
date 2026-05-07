@@ -82,33 +82,76 @@ def test_sanitize_patterns():
     assert "***aws_key***" in result["data"]["notes"]
 
 
-def test_custom_mask_text():
-    event = {
-        "password": "secret123",
-        "api_key": "test_key_123",
-        "isSanitizationEnabled": True,
-        "maskText": "[REDACTED]",
-    }
-    sanitizer = EventSanitizer(event)
-    result = sanitizer.get_sanitized_data()
-
-    assert result["password"] == "[REDACTED]"
-    assert result["api_key"] == "[REDACTED]"
-
-
 def test_non_sensitive_data_preserved():
-    """Test that non-sensitive data is not modified"""
     event = {
         "username": "john_doe",
         "description": "This is a normal description",
         "count": 42,
         "active": True,
+        "isSanitizationEnabled": True,
     }
-
-    sanitizer = EventSanitizer(event)
-    result = sanitizer.get_sanitized_data()
+    result = EventSanitizer(event).get_sanitized_data()
 
     assert result["username"] == "john_doe"
     assert result["description"] == "This is a normal description"
     assert result["count"] == 42
-    assert result["active"] == True
+    assert result["active"] is True
+
+
+def test_sanitization_disabled_bool_false():
+    event = {"password": "secret123", "isSanitizationEnabled": False}
+    result = EventSanitizer(event).get_sanitized_data()
+    assert result["password"] == "secret123"
+
+
+def test_sanitization_string_false_is_disabled():
+    event = {"password": "secret123", "isSanitizationEnabled": "false"}
+    result = EventSanitizer(event).get_sanitized_data()
+    assert result["password"] == "secret123"
+
+
+def test_sanitization_string_true_is_enabled():
+    event = {"password": "secret123", "isSanitizationEnabled": "true"}
+    result = EventSanitizer(event).get_sanitized_data()
+    assert result["password"] == "***password***"
+
+
+def test_sanitize_compound_key_names():
+    event = {
+        "user_password": "hunter2",
+        "my_token": "abc",
+        "isSanitizationEnabled": True,
+    }
+    result = EventSanitizer(event).get_sanitized_data()
+
+    assert result["user_password"] == "***password***"
+    assert result["my_token"] == "***token***"
+
+
+def test_sanitize_nested_list():
+    event = {
+        "data": [["SSN: 123-45-6789", "normal"]],
+        "isSanitizationEnabled": True,
+    }
+    result = EventSanitizer(event).get_sanitized_data()
+
+    assert "123-45-6789" not in result["data"][0][0]
+    assert "***ssn***" in result["data"][0][0]
+    assert result["data"][0][1] == "normal"
+
+
+def test_sanitize_email_and_phone_patterns():
+    event = {
+        "message": "Email user@example.com or call 555-867-5309",
+        "isSanitizationEnabled": True,
+    }
+    result = EventSanitizer(event).get_sanitized_data()
+
+    assert "user@example.com" not in result["message"]
+    assert "***email***" in result["message"]
+    assert "555-867-5309" not in result["message"]
+    assert "***phone***" in result["message"]
+
+
+def test_none_event_returns_empty_dict():
+    assert EventSanitizer(None).get_sanitized_data() == {}

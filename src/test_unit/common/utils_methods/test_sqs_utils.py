@@ -111,3 +111,201 @@ class TestSQSUtils:
         mock_client.change_message_visibility.assert_called_once_with(
             QueueUrl="test-queue", ReceiptHandle="test-receipt", VisibilityTimeout=30
         )
+
+    # --- send_message error handling ---
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_send_message_client_error(self, mock_sqs_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.send_message.side_effect = ClientError(
+            {'Error': {'Code': 'QueueDoesNotExist', 'Message': 'Queue not found'}}, 'send_message'
+        )
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(ClientError):
+            utils.send_message("test message")
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_send_message_botocore_error(self, mock_sqs_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.send_message.side_effect = BotoCoreError()
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(BotoCoreError):
+            utils.send_message("test message")
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_send_message_generic_error(self, mock_sqs_client):
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.send_message.side_effect = Exception("fail")
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(Exception):
+            utils.send_message("test message")
+
+    # --- receive_message edge cases ---
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_receive_message_no_messages_exhausts_polling(self, mock_sqs_client):
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.receive_message.return_value = {}
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        result = utils.receive_message(message_ids={"key": "val"}, max_polling_attempts=2)
+
+        assert result is None
+        assert mock_client.receive_message.call_count == 2
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_receive_message_skips_already_checked_receipt(self, mock_sqs_client):
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        msg = {
+            "MessageId": "id1",
+            "ReceiptHandle": "same-handle",
+            "Body": "body",
+            "MessageAttributes": {"key": {"StringValue": "wrong"}},
+        }
+        mock_client.receive_message.return_value = {"Messages": [msg]}
+        mock_client.change_message_visibility.return_value = {}
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        result = utils.receive_message(message_ids={"key": "val"}, max_polling_attempts=2)
+
+        assert result is None
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_receive_message_auto_delete(self, mock_sqs_client):
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.receive_message.return_value = {
+            "Messages": [{
+                "MessageId": "id1",
+                "ReceiptHandle": "handle1",
+                "Body": "body",
+                "MessageAttributes": {"key": {"StringValue": "val"}},
+            }]
+        }
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        result = utils.receive_message(
+            message_ids={"key": "val"}, auto_delete=True
+        )
+
+        assert result["MessageId"] == "id1"
+        mock_client.delete_message.assert_called_once_with(
+            QueueUrl="test-queue", ReceiptHandle="handle1"
+        )
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_receive_message_client_error(self, mock_sqs_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.receive_message.side_effect = ClientError(
+            {'Error': {'Code': 'QueueDoesNotExist', 'Message': 'Not found'}}, 'receive_message'
+        )
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(ClientError):
+            utils.receive_message(message_ids={"key": "val"})
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_receive_message_botocore_error(self, mock_sqs_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.receive_message.side_effect = BotoCoreError()
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(BotoCoreError):
+            utils.receive_message(message_ids={"key": "val"})
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_receive_message_generic_error(self, mock_sqs_client):
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.receive_message.side_effect = Exception("fail")
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(Exception):
+            utils.receive_message(message_ids={"key": "val"})
+
+    # --- change_message_visibility error handling ---
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_change_message_visibility_client_error(self, mock_sqs_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.change_message_visibility.side_effect = ClientError(
+            {'Error': {'Code': 'ReceiptHandleIsInvalid', 'Message': 'Invalid'}},
+            'change_message_visibility'
+        )
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(ClientError):
+            utils.change_message_visibility("bad-handle")
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_change_message_visibility_botocore_error(self, mock_sqs_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.change_message_visibility.side_effect = BotoCoreError()
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(BotoCoreError):
+            utils.change_message_visibility("handle")
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_change_message_visibility_generic_error(self, mock_sqs_client):
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.change_message_visibility.side_effect = Exception("fail")
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(Exception):
+            utils.change_message_visibility("handle")
+
+    # --- delete_message error handling ---
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_delete_message_client_error(self, mock_sqs_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.delete_message.side_effect = ClientError(
+            {'Error': {'Code': 'ReceiptHandleIsInvalid', 'Message': 'Invalid'}}, 'delete_message'
+        )
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(ClientError):
+            utils.delete_message("bad-handle")
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_delete_message_botocore_error(self, mock_sqs_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.delete_message.side_effect = BotoCoreError()
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(BotoCoreError):
+            utils.delete_message("handle")
+
+    @patch("common.utils_methods.sqs_utils.sqs_client")
+    def test_delete_message_generic_error(self, mock_sqs_client):
+        mock_client = MagicMock()
+        mock_sqs_client.return_value = mock_client
+        mock_client.delete_message.side_effect = Exception("fail")
+
+        utils = SQSUtils("test-queue", "us-east-1")
+        with pytest.raises(Exception):
+            utils.delete_message("handle")

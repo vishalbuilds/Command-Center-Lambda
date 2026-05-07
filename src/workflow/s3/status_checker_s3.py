@@ -1,4 +1,7 @@
-class StatusCheckerS3:
+from common.models.default_strategy import DefaultStrategy
+
+
+class StatusCheckerS3(DefaultStrategy):
     def __init__(self, event):
         self.event = event
 

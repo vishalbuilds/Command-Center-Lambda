@@ -33,14 +33,14 @@ class TestDynamoDBUtils:
         mock_dynamodb_resource.return_value = mock_resource
 
         mock_table.get_item.return_value = {
-            "item": {"id": "test-id", "name": "test-name"}
+            "Item": {"id": "test-id", "name": "test-name"}
         }
 
         utils = DynamoDBUtilsResource("us-east-1", "test-table")
         result = utils.get_single_item_by_pk("id", "test-id")
 
         assert result == {"id": "test-id", "name": "test-name"}
-        mock_table.get_item.assert_called_once_with(key={"id": "test-id"})
+        mock_table.get_item.assert_called_once_with(Key={"id": "test-id"})
 
     @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
     def test_get_single_item_by_pk_exception(self, mock_dynamodb_resource):
@@ -73,7 +73,7 @@ class TestDynamoDBUtils:
             update_expression,
             attr_names,
             attr_values,
-        ) = utils._buid_dynamoDB_update_expression(update_data)
+        ) = utils._build_dynamoDB_update_expression(update_data)
 
         assert update_expression == "SET #exp_status_key=:new_status_value"
         assert attr_names == {"#exp_status_key": "status"}
@@ -96,7 +96,7 @@ class TestDynamoDBUtils:
             update_expression,
             attr_names,
             attr_values,
-        ) = utils._buid_dynamoDB_update_expression(update_data)
+        ) = utils._build_dynamoDB_update_expression(update_data)
 
         assert update_expression.startswith("SET ")
         assert "#exp_status_key=:new_status_value" in update_expression
@@ -138,7 +138,6 @@ class TestDynamoDBUtils:
         mock_resource.Table.return_value = mock_table
         mock_dynamodb_resource.return_value = mock_resource
 
-        # Patch logger.info to accept any kwargs (avoid KeyError on reserved keys)
         mock_logger.info.side_effect = lambda *args, **kwargs: None
 
         utils = DynamoDBUtilsResource("us-east-1", "test-table")
@@ -147,3 +146,195 @@ class TestDynamoDBUtils:
         utils.put_item(item)
 
         mock_table.put_item.assert_called_once_with(Item=item)
+
+    # --- get_single_item_by_pk error handling ---
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_get_single_item_by_pk_client_error(self, mock_dynamodb_resource):
+        from botocore.exceptions import ClientError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.get_item.side_effect = ClientError(
+            {'Error': {'Code': 'ProvisionedThroughputExceededException', 'Message': 'Throttled'}},
+            'get_item'
+        )
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(ClientError):
+            utils.get_single_item_by_pk("id", "val")
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_get_single_item_by_pk_botocore_error(self, mock_dynamodb_resource):
+        from botocore.exceptions import BotoCoreError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.get_item.side_effect = BotoCoreError()
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(BotoCoreError):
+            utils.get_single_item_by_pk("id", "val")
+
+    # --- query_items_by_key_eq ---
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_query_items_by_key_eq_success(self, mock_dynamodb_resource):
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.query.return_value = {"Items": [{"id": "1"}, {"id": "2"}]}
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        result = utils.query_items_by_key_eq("gsi1", "status", "active")
+
+        assert result == [{"id": "1"}, {"id": "2"}]
+        mock_table.query.assert_called_once()
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_query_items_by_key_eq_empty(self, mock_dynamodb_resource):
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.query.return_value = {}
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        result = utils.query_items_by_key_eq("gsi1", "status", "active")
+
+        assert result == []
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_query_items_by_key_eq_client_error(self, mock_dynamodb_resource):
+        from botocore.exceptions import ClientError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.query.side_effect = ClientError(
+            {'Error': {'Code': 'ResourceNotFoundException', 'Message': 'Table not found'}}, 'query'
+        )
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(ClientError):
+            utils.query_items_by_key_eq("gsi1", "status", "active")
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_query_items_by_key_eq_botocore_error(self, mock_dynamodb_resource):
+        from botocore.exceptions import BotoCoreError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.query.side_effect = BotoCoreError()
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(BotoCoreError):
+            utils.query_items_by_key_eq("gsi1", "status", "active")
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_query_items_by_key_eq_generic_error(self, mock_dynamodb_resource):
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.query.side_effect = Exception("fail")
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(Exception):
+            utils.query_items_by_key_eq("gsi1", "status", "active")
+
+    # --- update_single_item_by_pk error handling ---
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_update_single_item_by_pk_client_error(self, mock_dynamodb_resource):
+        from botocore.exceptions import ClientError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.update_item.side_effect = ClientError(
+            {'Error': {'Code': 'ConditionalCheckFailedException', 'Message': 'Condition failed'}},
+            'update_item'
+        )
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(ClientError):
+            utils.update_single_item_by_pk({"status": "active"}, "id", "val")
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_update_single_item_by_pk_botocore_error(self, mock_dynamodb_resource):
+        from botocore.exceptions import BotoCoreError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.update_item.side_effect = BotoCoreError()
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(BotoCoreError):
+            utils.update_single_item_by_pk({"status": "active"}, "id", "val")
+
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_update_single_item_by_pk_generic_error(self, mock_dynamodb_resource):
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_table.update_item.side_effect = Exception("fail")
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(Exception):
+            utils.update_single_item_by_pk({"status": "active"}, "id", "val")
+
+    # --- put_item error handling ---
+
+    @patch("common.utils_methods.dynamodb_utils_resource.logger")
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_put_item_client_error(self, mock_dynamodb_resource, mock_logger):
+        from botocore.exceptions import ClientError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_logger.info.side_effect = lambda *args, **kwargs: None
+        mock_table.put_item.side_effect = ClientError(
+            {'Error': {'Code': 'ProvisionedThroughputExceededException', 'Message': 'Throttled'}},
+            'put_item'
+        )
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(ClientError):
+            utils.put_item({"id": "val"})
+
+    @patch("common.utils_methods.dynamodb_utils_resource.logger")
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_put_item_botocore_error(self, mock_dynamodb_resource, mock_logger):
+        from botocore.exceptions import BotoCoreError
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_logger.info.side_effect = lambda *args, **kwargs: None
+        mock_table.put_item.side_effect = BotoCoreError()
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(BotoCoreError):
+            utils.put_item({"id": "val"})
+
+    @patch("common.utils_methods.dynamodb_utils_resource.logger")
+    @patch("common.utils_methods.dynamodb_utils_resource.dynamoDB_resource")
+    def test_put_item_generic_error(self, mock_dynamodb_resource, mock_logger):
+        mock_resource = MagicMock()
+        mock_table = MagicMock()
+        mock_resource.Table.return_value = mock_table
+        mock_dynamodb_resource.return_value = mock_resource
+        mock_logger.info.side_effect = lambda *args, **kwargs: None
+        mock_table.put_item.side_effect = Exception("fail")
+
+        utils = DynamoDBUtilsResource("us-east-1", "test-table")
+        with pytest.raises(Exception):
+            utils.put_item({"id": "val"})

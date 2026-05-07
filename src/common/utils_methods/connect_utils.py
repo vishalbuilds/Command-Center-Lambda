@@ -10,9 +10,10 @@ All methods include logging and error handling for robust production use.
 
 from common.client_record.connect_client import connect_client
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class ConnectUtils:
@@ -38,6 +39,19 @@ class ConnectUtils:
         """
         try:
             return self.connect_client.get_paginator(service)
+        except ClientError as e:
+            logger.exception(
+                f"AWS ClientError getting paginator",
+                extra={
+                    "service": service,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(f"BotoCoreError getting paginator", extra={"service": service})
+            raise
         except Exception as e:
             logger.exception(f"Error in getting paginator: {e}")
             raise
@@ -66,6 +80,18 @@ class ConnectUtils:
                 for response in response_paginator
                 for contact_flow in response.get("ContactFlowSummaryList", [])
             ]
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError listing contact flows",
+                extra={
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception("BotoCoreError listing contact flows")
+            raise
         except Exception as e:
             logger.exception(f"Error in listing contact flows: {e}")
             raise
@@ -91,8 +117,20 @@ class ConnectUtils:
                 for response in response_paginator
                 for routing_profile in response.get("RoutingProfileSummaryList", [])
             ]
-        except Exception as e:
-            logger.exception(f"Error in listing routing profiles")
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError listing routing profiles",
+                extra={
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception("BotoCoreError listing routing profiles")
+            raise
+        except Exception:
+            logger.exception("Error in listing routing profiles")
             raise
 
     def list_queues(self):
@@ -121,8 +159,20 @@ class ConnectUtils:
                 for response in response_paginator
                 for queue in response.get("QueueSummaryList", [])
             ]
-        except Exception as e:
-            logger.exception(f"Error in listing queues")
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError listing queues",
+                extra={
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception("BotoCoreError listing queues")
+            raise
+        except Exception:
+            logger.exception("Error in listing queues")
             raise
 
     def describe_contact(self, contactId: str):
@@ -145,11 +195,27 @@ class ConnectUtils:
                 f"Describing contact id {contactId} from region:{self.region_name}"
             )
             return self.connect_client.describe_contact(
-                instanceId=self.instanceId, ContactId=contactId
+                InstanceId=self.instanceId, ContactId=contactId
             )
-        except Exception as e:
+        except ClientError as e:
             logger.exception(
-                f"Error in describing contact id",
+                "AWS ClientError describing contact",
+                extra={
+                    "contactId": contactId,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError describing contact",
+                extra={"contactId": contactId},
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Error in describing contact id",
                 extra={"contactId": contactId},
             )
             raise
@@ -182,35 +248,59 @@ class ConnectUtils:
                 logged before re-raising.
         """
         try:
-            if SourcePhoneNumber and ContactFlowId and QueueId:
-                logger.error(
-                    "add either queue name or source phone number or contact flow id"
+            if SourcePhoneNumber and QueueId:
+                raise ValueError(
+                    "Provide either SourcePhoneNumber or QueueId, not both"
                 )
             logger.info(
-                f"Inititing outbound voice contact all queue from region:{self.region_name}",
+                f"Initiating outbound voice contact from region:{self.region_name}",
                 extra={
-                    "name": name,
+                    "contact_name": name,
                     "DestinationPhoneNumber": DestinationPhoneNumber,
                     "ContactFlowId": ContactFlowId,
-                    "SourcePhoneNumber": (
-                        SourcePhoneNumber if SourcePhoneNumber else None
-                    ),
-                    "QueueId": (QueueId if QueueId else None),
+                    "SourcePhoneNumber": SourcePhoneNumber,
+                    "QueueId": QueueId,
                 },
             )
-            return self.connect_client.start_outbound_voice_contact(
-                name=name,
-                DestinationPhoneNumber=DestinationPhoneNumber,
-                ContactFlowId=ContactFlowId,
-                InstanceId=self.InstanceId,
-                SourcePhoneNumber=SourcePhoneNumber,
-                QueueId=QueueId,
-            )
-        except Exception as e:
+            kwargs = {
+                "DestinationPhoneNumber": DestinationPhoneNumber,
+                "ContactFlowId": ContactFlowId,
+                "InstanceId": self.instanceId,
+            }
+            if name:
+                kwargs["Attributes"] = {"Name": name}
+            if SourcePhoneNumber:
+                kwargs["SourcePhoneNumber"] = SourcePhoneNumber
+            if QueueId:
+                kwargs["QueueId"] = QueueId
+            return self.connect_client.start_outbound_voice_contact(**kwargs)
+        except ClientError as e:
             logger.exception(
-                f"Error in start outbound voice contact",
+                "AWS ClientError starting outbound voice contact",
                 extra={
-                    "name": name,
+                    "contact_name": name,
+                    "DestinationPhoneNumber": DestinationPhoneNumber,
+                    "ContactFlowId": ContactFlowId,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError starting outbound voice contact",
+                extra={
+                    "contact_name": name,
+                    "DestinationPhoneNumber": DestinationPhoneNumber,
+                    "ContactFlowId": ContactFlowId,
+                },
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Error in start outbound voice contact",
+                extra={
+                    "contact_name": name,
                     "DestinationPhoneNumber": DestinationPhoneNumber,
                     "ContactFlowId": ContactFlowId,
                     "SourcePhoneNumber": (
@@ -239,11 +329,27 @@ class ConnectUtils:
         try:
             logger.info("Disconnecting contact id", extra={"contactId": contactId})
             self.connect_client.stop_contact(
-                instanceId=self.instanceId,
+                InstanceId=self.instanceId,
                 ContactId=contactId,
                 DisconnectReason={"Code": "OTHERS"},
             )
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError stopping contact",
+                extra={
+                    "contactId": contactId,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError stopping contact",
+                extra={"contactId": contactId},
+            )
+            raise
+        except Exception:
             logger.exception(
                 "Error in disconnecting contactId", extra={"contactId": contactId}
             )
@@ -271,10 +377,27 @@ class ConnectUtils:
                 extra={**tags, "contactId": contactId},
             )
             self.connect_client.tag_contact(
-                instanceId=self.instanceId, ContactId=contactId, Tags=tags
+                InstanceId=self.instanceId, ContactId=contactId, Tags=tags
             )
-        except Exception as e:
-            logger.error(
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError tagging contact",
+                extra={
+                    **tags,
+                    "contactId": contactId,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError tagging contact",
+                extra={**tags, "contactId": contactId},
+            )
+            raise
+        except Exception:
+            logger.exception(
                 "Error in tagging contactId",
                 extra={**tags, "contactId": contactId},
             )
@@ -292,8 +415,24 @@ class ConnectUtils:
         try:
             logger.info(f"Getting current user data", extra=filters)
             return self.connect_client.get_current_user_data(
-                instanceId=self.instanceId, Filters=filters
+                InstanceId=self.instanceId, Filters=filters
             )
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError getting current user data",
+                extra={
+                    **filters,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError getting current user data",
+                extra=filters,
+            )
+            raise
+        except Exception:
             logger.error(f"Error in getting current user data", extra=filters)
             raise

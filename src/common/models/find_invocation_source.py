@@ -1,8 +1,4 @@
 """
-AWS Lambda Invocation Source Detector
-
-from https://michaelbrewer.github.io/aws-lambda-events
-
 A utility to identify common Lambda invocation sources:
 - Amazon Connect
 - API Gateway (REST API v1)
@@ -32,7 +28,7 @@ def _is_amazon_connect(event: dict) -> bool:
     if "Details" in event and "ContactData" in event.get("Details", {}):
         return True
 
-    if "Name" in event and isinstance(event.get("Name"), str):
+    if "Details" in event and "Name" in event and isinstance(event.get("Name"), str):
         name_lower = event["Name"].lower()
         return "contact" in name_lower or "connect" in name_lower
     return False
@@ -56,13 +52,9 @@ def _is_s3_event(event: dict) -> bool:
 
 def _is_eventbridge(event: dict) -> bool:
     """Check if the event is from EventBridge/CloudWatch Events."""
-    # EventBridge events have both 'detail-type' and 'source' fields
-    # But make sure it's not an S3 event (which can also have 'source')
-    return (
-        "detail-type" in event
-        and event.get("source", "") != "aws.events"
-        and "Records" not in event
-    )
+    # EventBridge events always have 'detail-type'; traditional S3 bucket
+    # notification events use 'Records' instead, so that check excludes them.
+    return "detail-type" in event and "Records" not in event
 
 
 def _is_function_url(request_context: dict) -> bool:
@@ -81,7 +73,7 @@ def _is_api_gateway_rest(request_context: dict) -> bool:
 
     return (
         "apiId" in request_context or "stage" in request_context
-    ) and not _is_function_url(request_context)
+    ) and not _is_function_url(request_context) and not _is_api_gateway_http(request_context)
 
 
 def get_invocation_source(event: dict) -> InvocationSource:
@@ -143,9 +135,9 @@ def extract_event_data(event: dict, invocation_source: InvocationSource) -> dict
         The relevant data section from the event
 
     Examples:
-        >>> # For Amazon Connect, returns ContactData
+        >>> # For Amazon Connect, returns ContactData Attributes
         >>> data = extract_event_data(event, "AMAZON_CONNECT")
-        >>> print(data['ContactId'])
+        >>> print(data['some_attribute_key'])
 
         >>> # For API Gateway, returns requestContext
         >>> data = extract_event_data(event, "API_GATEWAY_REST")

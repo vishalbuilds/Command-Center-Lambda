@@ -1,99 +1,70 @@
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from aws_lambda_powertools import Logger
 
-LOGGER = Logger()
+LOGGER = Logger(child=True)
 
 SENSITIVE_KEYS = {
-    "password",
-    "passwd",
-    "secret",
-    "api_key",
-    "apikey",
-    "access_token",
-    "auth_token",
-    "token",
-    "card_number",
-    "credit_card",
-    "ssn",
-    "aadhar",
-    "dob",
-    "address",
-    "awsaccesskeyid",
-    "aws_secret_access_key",
-    "secretaccesskey",
-    "sessiontoken",
-    "authorization",
-    "auth",
-    "x-amz-security-token",
+    "password", "passwd", "secret", "token", "key",
+    "api_key", "apikey", "access_token", "auth_token",
+    "card_number", "credit_card", "ssn", "aadhar",
+    "dob", "address", "auth", "authorization", "credential",
+    "awsaccesskeyid", "aws_secret_access_key", "secretaccesskey",
+    "sessiontoken", "x-amz-security-token",
+    "email", "phone", "mobile",
 }
 
 SENSITIVE_PATTERNS = {
+    "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
     "ssn": r"\b\d{3}-\d{2}-\d{4}\b",
-    "credit_card": r"\b(?:\d[ -]*?){13,16}\b",
-    "aws_key": r"AKIA[0-9A-Z]{16}",
-    "aws_secret": r"(?<![A-Za-z0-9])[A-Za-z0-9/+=]{40}(?![A-Za-z0-9])",
+    "credit_card": r"\b(?:\d{4}[- ]?){3}\d{4}\b",
+    "aws_key": r"\bAKIA[0-9A-Z]{16}\b",
+    "phone": r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b",
 }
+
+_SPLIT_RE = re.compile(r"[_\-]+")
 
 
 class EventSanitizer:
 
     def __init__(self, event: Dict = None):
         self.event = event
-        self.custom_mask_text = ""
 
-    def _mask_value(self, value: Any, key_name: str) -> Any:
-        if not isinstance(value, str):
-            return (
-                self.custom_mask_text if self.custom_mask_text else f"***{key_name}***"
-            )
-        if self.custom_mask_text:
-            return self.custom_mask_text
-        return f"***{key_name}***"
+    def _pii_type(self, key: str) -> Optional[str]:
+        lower = key.lower()
+        if lower in SENSITIVE_KEYS:
+            return lower
+        for part in _SPLIT_RE.split(lower):
+            if part in SENSITIVE_KEYS:
+                return part
+        return None
 
     def _sanitize_value(self, value: Any) -> Any:
-        if isinstance(value, str):
-            sanitized_value = value
-            for name, pattern in SENSITIVE_PATTERNS.items():
-                mask = (
-                    self.custom_mask_text if self.custom_mask_text else f"***{name}***"
-                )
-                sanitized_value = re.sub(pattern, mask, sanitized_value)
-            return sanitized_value
+        if not isinstance(value, str):
+            return value
+        for name, pattern in SENSITIVE_PATTERNS.items():
+            value = re.sub(pattern, f"***{name}***", value)
         return value
 
-    def _sanitize_dict(self, data: Dict) -> Dict:
-
-        if data is None:
-            return {}
-
-        sanitized = {}
-        for key, value in data.items():
-            lower_key = key.lower()
-            if lower_key in SENSITIVE_KEYS:
-                sanitized[key] = self._mask_value(value, lower_key)
-            elif isinstance(value, dict):
-                sanitized[key] = self._sanitize_dict(value)
-            elif isinstance(value, list):
-                sanitized[key] = [
-                    (
-                        self._sanitize_dict(v)
-                        if isinstance(v, dict)
-                        else self._sanitize_value(v)
-                    )
-                    for v in value
-                ]
-            else:
-                sanitized[key] = self._sanitize_value(value)
-        return sanitized
+    def _sanitize_node(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            sanitized = {}
+            for key, val in value.items():
+                pii = self._pii_type(key)
+                sanitized[key] = f"***{pii}***" if pii else self._sanitize_node(val)
+            return sanitized
+        if isinstance(value, list):
+            return [self._sanitize_node(item) for item in value]
+        return self._sanitize_value(value)
 
     def get_sanitized_data(self) -> Dict:
-        if self.event.get("isSanitizationEnabled", False):
-            LOGGER.info(
-                "Sanitisation is enabled", extra={"maskText": self.custom_mask_text}
-            )
-            self.custom_mask_text = self.event.get("maskText", "")
-            return self._sanitize_dict(self.event)
-        else:
+        if self.event is None:
+            return {}
+        is_enabled = self.event.get("isSanitizationEnabled", False)
+        if isinstance(is_enabled, str):
+            is_enabled = is_enabled.lower() in ("true", "1", "yes")
+        if not is_enabled:
             LOGGER.info("Sanitisation is disabled")
             return self.event
+        LOGGER.info("Sanitisation is enabled")
+        return self._sanitize_node(self.event)

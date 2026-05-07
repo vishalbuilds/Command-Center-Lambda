@@ -6,7 +6,9 @@ including single and batch CRUD, attribute-based queries, existence checks, and 
 All methods include logging and error handling for robust production use.
 """
 
+from typing import Optional
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 from common.client_record.dynamodb_resource import (
     dynamoDB_resource,
     dynamoDB_condition_Expression,
@@ -18,7 +20,7 @@ KEY_NAME = "keyName"
 KEY_VALUE = "keyValue"
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class DynamoDBUtilsResource:
@@ -28,7 +30,7 @@ class DynamoDBUtilsResource:
         self.table_name = table_name
         self.dynamodb_table = dynamoDB_resource(region_name).Table(self.table_name)
 
-    def _buid_dynamoDB_update_expression(
+    def _build_dynamoDB_update_expression(
         self, update_data: dict
     ) -> tuple[str, dict, dict]:
         """
@@ -59,7 +61,7 @@ class DynamoDBUtilsResource:
         update_expression = "SET " + ", ".join(update_parts)
         return update_expression, expression_attr_name, expression_attr_values
 
-    def get_single_item_by_pk(self, key_name: str, key_value: str) -> set:
+    def get_single_item_by_pk(self, key_name: str, key_value: str) -> Optional[dict]:
         """
         Fetch a single item from a DynamoDB table by its primery key.
         Args:
@@ -72,18 +74,32 @@ class DynamoDBUtilsResource:
             Exception: If the operation fails.
         """
         logger.info(
-            "Fetching item from {self.table_name} with key {key_name}:{key_value}",
+            f"Fetching item from {self.table_name} with key {key_name}:{key_value}",
             extra={key_name: key_value, "table_name": self.table_name},
         )
         try:
-            response = self.dynamodb_table.get_item(key={key_name: key_value})
-
-            if "item" in response:
-                return response["item"]
-
-        except Exception as e:
+            response = self.dynamodb_table.get_item(Key={key_name: key_value})
+            return response.get("Item")
+        except ClientError as e:
             logger.exception(
-                f"Error fetching item",
+                "AWS ClientError fetching item",
+                extra={
+                    key_name: key_value,
+                    "table_name": self.table_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError fetching item",
+                extra={key_name: key_value, "table_name": self.table_name},
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Error fetching item",
                 extra={key_name: key_value, "table_name": self.table_name},
             )
             raise
@@ -93,7 +109,7 @@ class DynamoDBUtilsResource:
         index_name: str,
         key_name: str,
         key_value: str,
-    ) -> set:
+    ) -> list:
         """
         Fetch all items from a DynamoDB table where a given attribute matches a value.
         Args:
@@ -106,7 +122,7 @@ class DynamoDBUtilsResource:
             Exception: If the operation fails.
         """
         logger.info(
-            "Fetching item from {self.table_name} with key {key_name}:{key_value}",
+            f"Fetching items from {self.table_name} with key {key_name}:{key_value}",
             extra={key_name: key_value, "table_name": self.table_name},
         )
         try:
@@ -116,13 +132,27 @@ class DynamoDBUtilsResource:
                 .Key(key_name)
                 .eq(key_value),
             )
-
-            if "item" in response:
-                return response["item"]
-
-        except Exception as e:
+            return response.get("Items", [])
+        except ClientError as e:
             logger.exception(
-                f"Error fetching item",
+                "AWS ClientError querying items",
+                extra={
+                    key_name: key_value,
+                    "table_name": self.table_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError querying items",
+                extra={key_name: key_value, "table_name": self.table_name},
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Error fetching item",
                 extra={key_name: key_value, "table_name": self.table_name},
             )
             raise
@@ -134,13 +164,13 @@ class DynamoDBUtilsResource:
         key_value: str,
     ) -> None:
         """
-        Save (put) an item into a DynamoDB table. Optionally use a condition expression.
+        Update an existing item in a DynamoDB table by its primary key.
         Args:
             update_data (dict): The data to update in given table.
             key_name: primary key name
             key_value: primary key value
         Returns:
-            dict: The response from DynamoDB put_item.
+            None
         Raises:
             Exception: If the operation fails.
         """
@@ -150,7 +180,7 @@ class DynamoDBUtilsResource:
         )
         try:
             update_expression, expression_attr_name, expression_attr_values = (
-                self._buid_dynamoDB_update_expression(update_data)
+                self._build_dynamoDB_update_expression(update_data)
             )
             self.dynamodb_table.update_item(
                 Key={key_name: key_value},
@@ -158,7 +188,25 @@ class DynamoDBUtilsResource:
                 ExpressionAttributeNames=expression_attr_name,
                 ExpressionAttributeValues=expression_attr_values,
             )
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                f"AWS ClientError updating data in {self.table_name}",
+                extra={
+                    key_name: key_value,
+                    "table_name": self.table_name,
+                    **update_data,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                f"BotoCoreError updating data in {self.table_name}",
+                extra={key_name: key_value, "table_name": self.table_name, **update_data},
+            )
+            raise
+        except Exception:
             logger.exception(
                 f"error in updating data in {self.table_name} with primary key{key_name}:{key_value} and data{update_data}",
                 extra={
@@ -176,7 +224,24 @@ class DynamoDBUtilsResource:
         )
         try:
             self.dynamodb_table.put_item(Item=item)
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                f"AWS ClientError putting data in {self.table_name}",
+                extra={
+                    **item,
+                    "table_name": self.table_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                f"BotoCoreError putting data in {self.table_name}",
+                extra={**item, "table_name": self.table_name},
+            )
+            raise
+        except Exception:
             logger.error(
                 f"Error in putting data in {self.table_name} with item: {item}",
                 extra={**item, "table_name": self.table_name},
