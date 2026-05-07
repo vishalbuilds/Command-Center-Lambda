@@ -255,7 +255,7 @@ class ConnectUtils:
             logger.info(
                 f"Initiating outbound voice contact from region:{self.region_name}",
                 extra={
-                    "name": name,
+                    "contact_name": name,
                     "DestinationPhoneNumber": DestinationPhoneNumber,
                     "ContactFlowId": ContactFlowId,
                     "SourcePhoneNumber": SourcePhoneNumber,
@@ -278,7 +278,7 @@ class ConnectUtils:
             logger.exception(
                 "AWS ClientError starting outbound voice contact",
                 extra={
-                    "name": name,
+                    "contact_name": name,
                     "DestinationPhoneNumber": DestinationPhoneNumber,
                     "ContactFlowId": ContactFlowId,
                     "error_code": e.response["Error"]["Code"],
@@ -290,7 +290,7 @@ class ConnectUtils:
             logger.exception(
                 "BotoCoreError starting outbound voice contact",
                 extra={
-                    "name": name,
+                    "contact_name": name,
                     "DestinationPhoneNumber": DestinationPhoneNumber,
                     "ContactFlowId": ContactFlowId,
                 },
@@ -300,7 +300,7 @@ class ConnectUtils:
             logger.exception(
                 "Error in start outbound voice contact",
                 extra={
-                    "name": name,
+                    "contact_name": name,
                     "DestinationPhoneNumber": DestinationPhoneNumber,
                     "ContactFlowId": ContactFlowId,
                     "SourcePhoneNumber": (

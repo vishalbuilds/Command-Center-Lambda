@@ -66,7 +66,7 @@ class SQSUtils:
                 "Sending message to SQS",
                 extra={
                     "queue_url": self.queue_url,
-                    "message": message,
+                    "message_body": message,
                     "message_attributes": message_attributes,
                 },
             )
@@ -88,7 +88,7 @@ class SQSUtils:
                 "AWS ClientError sending message to SQS",
                 extra={
                     "queue_url": self.queue_url,
-                    "message": message,
+                    "message_body": message,
                     "message_attributes": message_attributes,
                     "error_code": e.response["Error"]["Code"],
                     "error_message": e.response["Error"]["Message"],
@@ -100,7 +100,7 @@ class SQSUtils:
                 "BotoCoreError sending message to SQS",
                 extra={
                     "queue_url": self.queue_url,
-                    "message": message,
+                    "message_body": message,
                     "message_attributes": message_attributes,
                 },
             )
@@ -110,7 +110,7 @@ class SQSUtils:
                 "Error sending message to SQS",
                 extra={
                     "queue_url": self.queue_url,
-                    "message": message,
+                    "message_body": message,
                     "message_attributes": message_attributes,
                 },
             )

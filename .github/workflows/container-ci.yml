@@ -100,7 +100,7 @@ jobs:
           fi
           
           # Check if response contains statusCode: 200
-          if ! echo "$body" | grep -q '"statusCode": 200'; then
+          if ! echo "$body" | grep -q '"statusCode": "200"'; then
             echo "❌ Test failed: Response does not contain statusCode: 200"
             exit 1
           fi

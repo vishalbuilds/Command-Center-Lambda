@@ -110,17 +110,187 @@ class TestS3Utils:
         mock_client = MagicMock()
         mock_s3_client.return_value = mock_client
         mock_client.generate_presigned_url.return_value = 'https://test-url.com'
-        
+
         utils = S3Utils('test-bucket')
         result = utils.create_presigned_url(
-            'test-key', 
-            expiration=7200, 
+            'test-key',
+            expiration=7200,
             operation='get_object'
         )
-        
+
         assert result == 'https://test-url.com'
         mock_client.generate_presigned_url.assert_called_once_with(
             ClientMethod='get_object',
             Params={'Bucket': 'test-bucket', 'Key': 'test-key'},
             ExpiresIn=7200
         )
+
+    # --- get_object error handling ---
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_get_object_client_error(self, mock_s3_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.get_object.side_effect = ClientError(
+            {'Error': {'Code': 'NoSuchKey', 'Message': 'Key not found'}}, 'get_object'
+        )
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(ClientError):
+            utils.get_object('missing-key')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_get_object_botocore_error(self, mock_s3_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.get_object.side_effect = BotoCoreError()
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(BotoCoreError):
+            utils.get_object('test-key')
+
+    # --- put_object error handling ---
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_put_object_client_error(self, mock_s3_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.put_object.side_effect = ClientError(
+            {'Error': {'Code': 'AccessDenied', 'Message': 'Access denied'}}, 'put_object'
+        )
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(ClientError):
+            utils.put_object('test-key', b'data')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_put_object_botocore_error(self, mock_s3_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.put_object.side_effect = BotoCoreError()
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(BotoCoreError):
+            utils.put_object('test-key', b'data')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_put_object_generic_error(self, mock_s3_client):
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.put_object.side_effect = Exception("fail")
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(Exception, match="fail"):
+            utils.put_object('test-key', b'data')
+
+    # --- delete_object error handling ---
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_delete_object_client_error(self, mock_s3_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.delete_object.side_effect = ClientError(
+            {'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'}}, 'delete_object'
+        )
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(ClientError):
+            utils.delete_object('test-key')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_delete_object_botocore_error(self, mock_s3_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.delete_object.side_effect = BotoCoreError()
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(BotoCoreError):
+            utils.delete_object('test-key')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_delete_object_generic_error(self, mock_s3_client):
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.delete_object.side_effect = Exception("fail")
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(Exception):
+            utils.delete_object('test-key')
+
+    # --- list_objects error handling ---
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_list_objects_client_error(self, mock_s3_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.list_objects_v2.side_effect = ClientError(
+            {'Error': {'Code': 'NoSuchBucket', 'Message': 'Bucket not found'}}, 'list_objects_v2'
+        )
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(ClientError):
+            utils.list_objects('prefix/')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_list_objects_botocore_error(self, mock_s3_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.list_objects_v2.side_effect = BotoCoreError()
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(BotoCoreError):
+            utils.list_objects('prefix/')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_list_objects_generic_error(self, mock_s3_client):
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.list_objects_v2.side_effect = Exception("fail")
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(Exception):
+            utils.list_objects('prefix/')
+
+    # --- create_presigned_url error handling ---
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_create_presigned_url_client_error(self, mock_s3_client):
+        from botocore.exceptions import ClientError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.generate_presigned_url.side_effect = ClientError(
+            {'Error': {'Code': 'AccessDenied', 'Message': 'Denied'}}, 'generate_presigned_url'
+        )
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(ClientError):
+            utils.create_presigned_url('test-key')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_create_presigned_url_botocore_error(self, mock_s3_client):
+        from botocore.exceptions import BotoCoreError
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.generate_presigned_url.side_effect = BotoCoreError()
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(BotoCoreError):
+            utils.create_presigned_url('test-key')
+
+    @patch('common.utils_methods.s3_utils.s3_client')
+    def test_create_presigned_url_generic_error(self, mock_s3_client):
+        mock_client = MagicMock()
+        mock_s3_client.return_value = mock_client
+        mock_client.generate_presigned_url.side_effect = Exception("fail")
+
+        utils = S3Utils('test-bucket')
+        with pytest.raises(Exception):
+            utils.create_presigned_url('test-key')
