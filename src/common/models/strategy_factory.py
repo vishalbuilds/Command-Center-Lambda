@@ -1,6 +1,5 @@
 from aws_lambda_powertools import Logger
 
-from common.models.lambda_response import LambdaResponse
 from workflow.amazon_connect.imports import *
 from workflow.api_gateway_http.imports import *
 from workflow.api_gateway_rest.imports import *
@@ -12,7 +11,8 @@ ALL_INVOCATION_TYPE_LIST = (
     AMAZON_CONNECT + API_GATEWAY_HTTP + API_GATEWAY_REST + FUNCTION_URL + S3
 )
 
-LOGGER = Logger()
+
+LOGGER = Logger(child=True)
 
 
 class StrategyFactory:
@@ -67,14 +67,14 @@ class StrategyFactory:
             )
             raise
 
-    def execute(self) -> LambdaResponse:
+    def execute(self):
         # --- Initiate & pass event ---
         try:
             self._initiate_strategy()
             self._pass_event_to_strategy()
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to initiate strategy or pass event")
-            return LambdaResponse.error(message=str(e))
+            raise
 
         # --- Validate ---
         try:
@@ -84,10 +84,10 @@ class StrategyFactory:
                     "Validation failed from strategy class",
                     extra={"error": error},
                 )
-                return LambdaResponse.error(message=str(error))
-        except Exception as e:
+                raise ValueError(str(error))
+        except Exception:
             LOGGER.exception("Unexpected error during strategy validation")
-            return LambdaResponse.error(message=str(e))
+            raise
 
         # --- Execute ---
         try:
@@ -97,6 +97,6 @@ class StrategyFactory:
                 extra={"strategy_response": strategy_response},
             )
             return strategy_response
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error during strategy operation")
-            return LambdaResponse.error(message=str(e))
+            raise

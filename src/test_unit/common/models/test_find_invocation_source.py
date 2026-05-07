@@ -28,12 +28,17 @@ class TestFindInvocationSource:
         assert _is_amazon_connect(event) is True
     
     def test_is_amazon_connect_with_name_contact(self):
-        """Test Amazon Connect detection with contact in name."""
-        event = {"Name": "ContactFlowEvent"}
+        """Test Amazon Connect detection with contact in name (requires Details key)."""
+        event = {"Name": "ContactFlowEvent", "Details": {}}
         assert _is_amazon_connect(event) is True
-        
-        event = {"Name": "ConnectEvent"}
+
+        event = {"Name": "ConnectEvent", "Details": {}}
         assert _is_amazon_connect(event) is True
+
+    def test_is_amazon_connect_name_without_details_is_false(self):
+        """Name heuristic must not fire without Details — prevents EventBridge false positives."""
+        event = {"Name": "ContactStateChange", "detail-type": "SomeEvent", "source": "aws.custom"}
+        assert _is_amazon_connect(event) is False
     
     def test_is_amazon_connect_false(self):
         """Test Amazon Connect detection returns false."""
@@ -119,10 +124,15 @@ class TestFindInvocationSource:
     def test_is_api_gateway_rest_false_function_url(self):
         """Test API Gateway REST detection returns false for function URL."""
         request_context = {
-            "apiId": "test123", 
+            "apiId": "test123",
             "domainName": "abc123.lambda-url.us-east-1.on.aws"
         }
-        assert _is_api_gateway_rest(request_context) is False 
+        assert _is_api_gateway_rest(request_context) is False
+
+    def test_is_api_gateway_rest_false_http_api(self):
+        """Test API Gateway REST detection returns false for HTTP API v2 contexts."""
+        request_context = {"apiId": "test123", "stage": "prod", "http": {"method": "GET"}}
+        assert _is_api_gateway_rest(request_context) is False
     
     def test_get_invocation_source_amazon_connect(self):
         """Test get_invocation_source for Amazon Connect."""

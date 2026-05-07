@@ -6,10 +6,11 @@ All methods include logging and error handling for robust production use.
 """
 
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 from common.client_record.s3_client import s3_client
 from typing import Literal
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class S3Utils:
@@ -35,9 +36,26 @@ class S3Utils:
                 extra={"key": key, "bucket": self.bucket},
             )
             return self.s3_client.get_object(Bucket=self.bucket, Key=key)
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError getting object",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError getting object",
+                extra={"key": key, "bucket": self.bucket},
+            )
+            raise
+        except Exception:
             logger.error(
-                f"Error getting object",
+                "Error getting object",
                 extra={"key": key, "bucket": self.bucket},
             )
             raise
@@ -63,6 +81,23 @@ class S3Utils:
                 },
             )
             return self.s3_client.put_object(Bucket=self.bucket, Key=key, Body=body)
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError putting object",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError putting object",
+                extra={"key": key, "bucket": self.bucket},
+            )
+            raise
         except Exception as e:
             logger.error(
                 f"Error putting object: {e}",
@@ -93,6 +128,23 @@ class S3Utils:
                 },
             )
             return self.s3_client.delete_object(Bucket=self.bucket, Key=key)
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError deleting object",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError deleting object",
+                extra={"key": key, "bucket": self.bucket},
+            )
+            raise
         except Exception as e:
             logger.error(
                 f"Error deleting object: {e}",
@@ -123,9 +175,26 @@ class S3Utils:
                 },
             )
             return self.s3_client.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError listing objects",
+                extra={
+                    "prefix": prefix,
+                    "bucket": self.bucket,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError listing objects",
+                extra={"prefix": prefix, "bucket": self.bucket},
+            )
+            raise
+        except Exception:
             logger.error(
-                f"Error listing objects",
+                "Error listing objects",
                 extra={
                     "prefix": prefix,
                     "bucket": self.bucket,
@@ -166,6 +235,30 @@ class S3Utils:
                 Params={"Bucket": self.bucket, "Key": key},
                 ExpiresIn=expiration,
             )
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError creating presigned url",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                    "operation": operation,
+                    "expiration": expiration,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError creating presigned url",
+                extra={
+                    "key": key,
+                    "bucket": self.bucket,
+                    "operation": operation,
+                    "expiration": expiration,
+                },
+            )
+            raise
         except Exception as e:
             logger.error(
                 f"Error listing objects: {e}",

@@ -16,7 +16,7 @@ LOGGER = Logger()
 
 
 @LOGGER.inject_lambda_context(log_event=True)
-def lambda_handler(event, _context: LambdaContext) -> LambdaResponse:
+def lambda_handler(event, context: LambdaContext) -> LambdaResponse:
 
     invocation_source = None
 

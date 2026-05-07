@@ -9,11 +9,12 @@ All methods include logging and error handling for robust production use.
 """
 
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 from typing import List, Optional, Dict, Any
 from common.client_record.ses_client import ses_client
 import re
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class SESUtils:
@@ -172,6 +173,32 @@ class SESUtils:
                     "bcc_email": _bcc_email,
                     "subject": subject,
                     "body_html": body_html,
+                },
+            )
+            raise
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError sending email via SES",
+                extra={
+                    "from_email": _from_email,
+                    "to_email": _to_email,
+                    "cc_email": _cc_email,
+                    "bcc_email": _bcc_email,
+                    "subject": subject,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError sending email via SES",
+                extra={
+                    "from_email": _from_email,
+                    "to_email": _to_email,
+                    "cc_email": _cc_email,
+                    "bcc_email": _bcc_email,
+                    "subject": subject,
                 },
             )
             raise

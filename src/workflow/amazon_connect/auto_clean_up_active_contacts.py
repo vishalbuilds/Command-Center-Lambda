@@ -4,7 +4,7 @@ from aws_lambda_powertools import Logger
 import os
 from datetime import datetime, timezone
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 MAX_CONTACT_ACTIVE_TIME = 2  # hours

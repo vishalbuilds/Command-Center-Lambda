@@ -8,6 +8,7 @@ All methods include logging and error handling for robust production use.
 
 from typing import Optional
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 from common.client_record.dynamodb_resource import (
     dynamoDB_resource,
     dynamoDB_condition_Expression,
@@ -19,7 +20,7 @@ KEY_NAME = "keyName"
 KEY_VALUE = "keyValue"
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class DynamoDBUtilsResource:
@@ -79,10 +80,26 @@ class DynamoDBUtilsResource:
         try:
             response = self.dynamodb_table.get_item(Key={key_name: key_value})
             return response.get("Item")
-
-        except Exception as e:
+        except ClientError as e:
             logger.exception(
-                f"Error fetching item",
+                "AWS ClientError fetching item",
+                extra={
+                    key_name: key_value,
+                    "table_name": self.table_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError fetching item",
+                extra={key_name: key_value, "table_name": self.table_name},
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Error fetching item",
                 extra={key_name: key_value, "table_name": self.table_name},
             )
             raise
@@ -116,10 +133,26 @@ class DynamoDBUtilsResource:
                 .eq(key_value),
             )
             return response.get("Items", [])
-
-        except Exception as e:
+        except ClientError as e:
             logger.exception(
-                f"Error fetching item",
+                "AWS ClientError querying items",
+                extra={
+                    key_name: key_value,
+                    "table_name": self.table_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError querying items",
+                extra={key_name: key_value, "table_name": self.table_name},
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Error fetching item",
                 extra={key_name: key_value, "table_name": self.table_name},
             )
             raise
@@ -155,7 +188,25 @@ class DynamoDBUtilsResource:
                 ExpressionAttributeNames=expression_attr_name,
                 ExpressionAttributeValues=expression_attr_values,
             )
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                f"AWS ClientError updating data in {self.table_name}",
+                extra={
+                    key_name: key_value,
+                    "table_name": self.table_name,
+                    **update_data,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                f"BotoCoreError updating data in {self.table_name}",
+                extra={key_name: key_value, "table_name": self.table_name, **update_data},
+            )
+            raise
+        except Exception:
             logger.exception(
                 f"error in updating data in {self.table_name} with primary key{key_name}:{key_value} and data{update_data}",
                 extra={
@@ -173,7 +224,24 @@ class DynamoDBUtilsResource:
         )
         try:
             self.dynamodb_table.put_item(Item=item)
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                f"AWS ClientError putting data in {self.table_name}",
+                extra={
+                    **item,
+                    "table_name": self.table_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                f"BotoCoreError putting data in {self.table_name}",
+                extra={**item, "table_name": self.table_name},
+            )
+            raise
+        except Exception:
             logger.error(
                 f"Error in putting data in {self.table_name} with item: {item}",
                 extra={**item, "table_name": self.table_name},

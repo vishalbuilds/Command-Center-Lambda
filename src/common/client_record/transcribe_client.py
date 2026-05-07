@@ -2,7 +2,7 @@ import boto3
 from aws_lambda_powertools import Logger
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 def transcribe_client(region_name: str = "us-east-1"):

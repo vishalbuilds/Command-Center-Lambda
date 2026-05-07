@@ -1,7 +1,7 @@
 from workflow.amazon_connect.dynamodb_lookup import DynamodbLookup
 from aws_lambda_powertools import Logger
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class DynamoDBLookupCheck(DynamodbLookup):

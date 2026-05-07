@@ -9,10 +9,11 @@ All methods include logging and error handling for robust production use.
 """
 
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 from common.client_record.sqs_client import sqs_client
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 MAX_POLLING_ATTEMPTS = 10
 
@@ -82,6 +83,28 @@ class SQSUtils:
             )
             return response
 
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError sending message to SQS",
+                extra={
+                    "queue_url": self.queue_url,
+                    "message": message,
+                    "message_attributes": message_attributes,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError sending message to SQS",
+                extra={
+                    "queue_url": self.queue_url,
+                    "message": message,
+                    "message_attributes": message_attributes,
+                },
+            )
+            raise
         except Exception:
             logger.exception(
                 "Error sending message to SQS",
@@ -201,6 +224,26 @@ class SQSUtils:
             )
             return None
 
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError receiving message from SQS",
+                extra={
+                    "queue_url": self.queue_url,
+                    "message_ids": message_ids,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError receiving message from SQS",
+                extra={
+                    "queue_url": self.queue_url,
+                    "message_ids": message_ids,
+                },
+            )
+            raise
         except Exception:
             logger.exception(
                 "Error receiving message from SQS",
@@ -241,6 +284,28 @@ class SQSUtils:
                 },
             )
 
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError changing message visibility",
+                extra={
+                    "receipt_handle": receipt_handle,
+                    "visibility_timeout": visibility_timeout,
+                    "queue_url": self.queue_url,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError changing message visibility",
+                extra={
+                    "receipt_handle": receipt_handle,
+                    "visibility_timeout": visibility_timeout,
+                    "queue_url": self.queue_url,
+                },
+            )
+            raise
         except Exception:
             logger.exception(
                 "Error changing message visibility",
@@ -271,6 +336,26 @@ class SQSUtils:
                 extra={"receipt_handle": receipt_handle},
             )
 
+        except ClientError as e:
+            logger.exception(
+                "AWS ClientError deleting message from SQS",
+                extra={
+                    "receipt_handle": receipt_handle,
+                    "queue_url": self.queue_url,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                "BotoCoreError deleting message from SQS",
+                extra={
+                    "receipt_handle": receipt_handle,
+                    "queue_url": self.queue_url,
+                },
+            )
+            raise
         except Exception:
             logger.exception(
                 "Error deleting message from SQS",

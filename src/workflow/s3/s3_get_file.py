@@ -3,7 +3,7 @@ from aws_lambda_powertools import Logger
 from common.models.default_strategy import DefaultStrategy
 from common.utils_methods.s3_utils import S3Utils
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class S3GetFile(DefaultStrategy):

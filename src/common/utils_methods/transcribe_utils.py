@@ -7,10 +7,11 @@ All methods include logging and error handling for robust production use.
 
 import time
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 from common.client_record.transcribe_client import transcribe_client
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class TranscribeUtils:
@@ -54,6 +55,22 @@ class TranscribeUtils:
                 extra={"transcription_job_name": transcription_job_name},
             )
             return response
+        except ClientError as e:
+            logger.exception(
+                f"AWS ClientError starting transcription job {transcription_job_name}",
+                extra={
+                    "transcription_job_name": transcription_job_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                f"BotoCoreError starting transcription job {transcription_job_name}",
+                extra={"transcription_job_name": transcription_job_name},
+            )
+            raise
         except Exception as e:
             logger.exception(
                 f"Error starting transcription job {transcription_job_name}: {e}",
@@ -82,6 +99,22 @@ class TranscribeUtils:
                 response = self.transcribe_client.get_transcription_job(
                     TranscriptionJobName=transcription_job_name
                 )
+            except ClientError as e:
+                logger.exception(
+                    f"AWS ClientError polling transcription job status",
+                    extra={
+                        "transcription_job_name": transcription_job_name,
+                        "error_code": e.response["Error"]["Code"],
+                        "error_message": e.response["Error"]["Message"],
+                    },
+                )
+                raise
+            except BotoCoreError:
+                logger.exception(
+                    f"BotoCoreError polling transcription job status",
+                    extra={"transcription_job_name": transcription_job_name},
+                )
+                raise
             except Exception as e:
                 logger.exception(
                     f"Error polling transcription job status: {e}",

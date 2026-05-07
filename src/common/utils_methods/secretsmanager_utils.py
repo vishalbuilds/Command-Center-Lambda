@@ -9,10 +9,11 @@ All methods include logging and error handling for robust production use.
 """
 
 from aws_lambda_powertools import Logger
+from botocore.exceptions import ClientError, BotoCoreError
 from common.client_record.secretsmanager_client import secretsmanager_client
 
 
-logger = Logger()
+logger = Logger(child=True)
 
 
 class SecretsManagerUtils:
@@ -34,7 +35,23 @@ class SecretsManagerUtils:
                 extra={"secret_name": secret_name},
             )
             return self.secretsmanager_client.get_secret_value(SecretId=secret_name)
-        except Exception as e:
+        except ClientError as e:
+            logger.exception(
+                f"AWS ClientError retrieving secret: {secret_name}",
+                extra={
+                    "secret_name": secret_name,
+                    "error_code": e.response["Error"]["Code"],
+                    "error_message": e.response["Error"]["Message"],
+                },
+            )
+            raise
+        except BotoCoreError:
+            logger.exception(
+                f"BotoCoreError retrieving secret: {secret_name}",
+                extra={"secret_name": secret_name},
+            )
+            raise
+        except Exception:
             logger.exception(
                 f"Error retrieving secret: {secret_name}",
                 extra={"secret_name": secret_name},
